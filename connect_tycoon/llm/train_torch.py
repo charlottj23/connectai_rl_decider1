@@ -109,7 +109,7 @@ def sft(data_dir, out, model=BASE_MODEL, epochs=1.0, lr=1e-4, batch=8, rank=8, s
     return sc
 
 
-def rl(data_dir, start, out, model=BASE_MODEL, steps=150, batch=8, lr=2e-5, beta=0.05, eval_every=50, seed=0, log=print):
+def rl(data_dir, start, out, model=BASE_MODEL, steps=150, batch=8, lr=2e-5, beta=0.05, eval_every=50, seed=0, max_rows=None, log=print):
     """③ 강화학습 · train_mlx.rl과 같은 손실: −Σ p · 장점 + β · KL(p ‖ 출발 모델). start는 지도학습 어댑터 폴더."""
     import torch
     from peft import PeftModel
@@ -119,6 +119,8 @@ def rl(data_dir, start, out, model=BASE_MODEL, steps=150, batch=8, lr=2e-5, beta
     sc = Scorer(model)
     sc.model = PeftModel.from_pretrained(sc.model, start, is_trainable=True)
     rows, valid = [r for r in load(data_dir, "train") if r.get("label") != "teacher"], load(data_dir, "valid")
+    if max_rows and len(rows) > max_rows:                     # Mac(train_mlx.rl)과 같은 방식으로 일부만
+        rows = rnd.sample(rows, max_rows)
     adv = advantages(rows)
     ids = [sc.ids(r["task"]) for r in rows]
     sc.model.eval()

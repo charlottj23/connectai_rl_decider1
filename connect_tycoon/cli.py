@@ -163,6 +163,23 @@ def cmd_push(args):
     print(f"https://huggingface.co/{repo}")
 
 
+def _llm_backend(name):
+    """mlx = Mac(Apple Silicon) · torch = Windows · Linux · Colab (NVIDIA GPU 권장) · auto = 설치된 것으로."""
+    import importlib.util
+    import platform
+    if name == "auto":
+        mac = platform.system() == "Darwin" and platform.machine() == "arm64"
+        name = "mlx" if mac and importlib.util.find_spec("mlx_lm") else "torch"
+    if name == "mlx":
+        from .llm import train_mlx as M
+    else:
+        if not importlib.util.find_spec("torch"):
+            sys.exit('PyTorch가 필요합니다:  pip install "connect-tycoon[llm]"  (Mac이면 pip install "connect-tycoon[llm-mac]")')
+        from .llm import train_torch as M
+    print(f"언어 모델 학습 도구 · {name}")
+    return M
+
+
 def cmd_llm(args):
     """언어 모델 단계: data → sft → rl → eval → push (Mac은 MLX, Colab은 노트북의 PyTorch 경로)."""
     import json as _json
@@ -175,7 +192,7 @@ def cmd_llm(args):
         splits = {"train": range(20000, 20000 + args.train_months), "valid": range(21000, 21002), "test": range(22000, 22002)}
         print(D.build(co, teacher, args.out, splits=splits, stride=args.stride))
         return
-    from .llm import train_mlx as M
+    M = _llm_backend(args.backend)
     if args.step == "sft":
         M.sft(args.data, args.out, epochs=args.epochs, lr=args.lr)
     elif args.step == "rl":
@@ -244,6 +261,7 @@ def main(argv=None):
     s.add_argument("--from", dest="start", help="강화학습 출발 어댑터 (보통 sft 결과)"); s.add_argument("--adapter", action="append")
     s.add_argument("--epochs", type=float, default=1.0); s.add_argument("--lr", type=float, default=1e-4)
     s.add_argument("--steps", type=int, default=150); s.add_argument("--batch", type=int, default=8); s.add_argument("--beta", type=float, default=0.05); s.add_argument("--max-rows", type=int, default=1500)
+    s.add_argument("--backend", default="auto", choices=["auto", "mlx", "torch"], help="mlx(Mac) · torch(Windows · Linux · NVIDIA GPU)")
     s.add_argument("--months", type=int, default=0, help="eval: 시뮬레이터에서 운영해 볼 달 수 (느림)"); s.add_argument("--save")
     s.add_argument("--results", help="push: eval --save로 저장한 성적"); s.add_argument("--repo")
     s.add_argument("--name", help="push: 업로드 이름 connectailab-이름-버전의 이름 (영문)"); s.add_argument("--version", default="v1")

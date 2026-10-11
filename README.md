@@ -110,6 +110,8 @@ connect-tycoon llm eval --data llm_data --adapter adapters/sft --adapter adapter
 connect-tycoon llm push --adapter adapters/rl --data llm_data --results eval.json
 ```
 
+**Windows · Linux (NVIDIA GPU · PyTorch)** · 위 명령에 `--backend torch`를 붙입니다 (`pip install -e ".[llm]"`). Mac은 자동으로 MLX를 씁니다.
+
 **Colab (GPU · PyTorch)** · 시뮬레이터 → Qwen 지도학습 → 강화학습 → 내 Hugging Face 계정에 업로드까지 한 번에
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/rl_decision_model_qwen_colab.ipynb)
