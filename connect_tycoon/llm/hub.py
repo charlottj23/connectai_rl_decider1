@@ -5,9 +5,33 @@ import os
 from .format import BASE_MODEL, SYSTEM
 
 YT = "https://www.youtube.com/@CONNECT-AI-LAB"
+RAW = "https://raw.githubusercontent.com/wonseokjung/connect-tycoon/main/"
+COLAB = "https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/rl_decision_model_qwen_colab.ipynb"
 
 
-def card(repo, results=None, meta=None, backend="mlx", base=BASE_MODEL):
+def _badge(label, msg, logo, url):
+    from urllib.parse import quote
+    img = (f"https://img.shields.io/badge/{quote(label)}-{quote(msg)}-d0f991?style=for-the-badge&logo={logo}"
+           f"&logoColor=d0f991&labelColor=050807&color=d0f991")
+    return f'<a href="{url}"><img src="{img}" alt="{label}"></a>'
+
+
+def brand_header():
+    """모델 카드 맨 위 · 움직이는 배너와 브랜드 배지 (그림은 GitHub에 있어 누가 올린 카드든 똑같이 보입니다)."""
+    badges = " ".join([_badge("Colab", "직접 학습하기", "googlecolab", COLAB),
+                       _badge("GitHub", "CONNECT TYCOON", "github", "https://github.com/wonseokjung/connect-tycoon"),
+                       _badge("YouTube", "CONNECT AI LAB", "youtube", YT),
+                       _badge("AI CITY BUILDERS", "강화학습 AI", "bookstack", "https://www.aicitybuilders.com/robot")])
+    return (f'<p align="center"><img src="{RAW}docs/brand/banner.gif" alt="RL AI COMPANY DECISION MAKING MODEL" width="100%"></p>\n\n'
+            f'<p align="center">{badges}</p>\n')
+
+
+def simulator_gif():
+    return (f'<p align="center"><img src="{RAW}docs/images/hero.gif" alt="모델이 회사를 운영하는 하루" width="88%"></p>\n'
+            '<p align="center"><sub>시뮬레이터 속 회사 · 맨 위층의 모델이 판단하면 빛줄기가 그 층으로 내려가고, 결과가 돈 · 만족 · 사고로 돌아옵니다</sub></p>\n')
+
+
+def card(repo, results=None, meta=None, backend="mlx", base=BASE_MODEL, results_image=None):
     res = results or {}
     rows = []
     for name, r in res.items():
@@ -33,10 +57,14 @@ pipeline_tag: reinforcement-learning
 tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-making, gymnasium, connect-tycoon, connect-ai-lab, lora, qwen3.5]
 ---
 
+{brand_header()}
+
 # RL AI COMPANY DECISION MAKING MODEL
 
 회사의 판단 하나(상황 · 질문 · 보기)를 읽고 **보기 글자 하나**로 답하는 의사결정 모델입니다. 보기 글자의 확률이 선택지별 확률, 가장 큰 값이 확신입니다.
 [CONNECT TYCOON](https://github.com/wonseokjung/connect-tycoon) 시뮬레이터에서 만든 학습 데이터로 `{base}`에 LoRA를 학습했습니다.
+
+{simulator_gif()}
 
 ## 만든 방법
 
@@ -48,6 +76,8 @@ tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-makin
 회사 분포: `{m.get('profile', 'general')}` (공개 데이터로 맞춘 일반 회사) · 문제 수: {json.dumps(m.get('counts', {}), ensure_ascii=False)}
 
 ## 성적
+
+{f'<p align="center"><img src="{results_image}" alt="학습 단계별 성적" width="100%"></p>' if results_image else ''}
 
 {table}
 
@@ -73,12 +103,15 @@ tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-makin
 """
 
 
-def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=None, private=False):
+def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=None, private=False, results_png=None):
     from huggingface_hub import HfApi
     api = HfApi(token=token or os.environ.get("HF_TOKEN"))
     repo = repo or f"{api.whoami()['name']}/rl-ai-company-decision-model"
     api.create_repo(repo, exist_ok=True, private=private)
     api.upload_folder(folder_path=adapter_dir, path_in_repo="adapter" if backend == "mlx" else ".", repo_id=repo,
                       allow_patterns=["adapters.safetensors", "adapter_config.json", "adapter_model.safetensors", "*.json"])
-    api.upload_file(path_or_fileobj=card(repo, results, meta, backend).encode("utf-8"), path_in_repo="README.md", repo_id=repo)
+    img = None
+    if results_png:                                           # 성적 그래프는 저장소 안에 (모델마다 다르므로)
+        api.upload_file(path_or_fileobj=results_png, path_in_repo="assets/results.png", repo_id=repo); img = "assets/results.png"
+    api.upload_file(path_or_fileobj=card(repo, results, meta, backend, results_image=img).encode("utf-8"), path_in_repo="README.md", repo_id=repo)
     return f"https://huggingface.co/{repo}"

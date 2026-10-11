@@ -8,6 +8,7 @@ from .train import TEST_SEEDS, evaluate
 
 
 def model_card(brain, company, repo):
+    from .llm.hub import brand_header, simulator_gif
     pol = J.JevPolicy(brain, values=company.values, config=company.cfg, keep=False, check=False)
     me, rule = evaluate(company, pol, TEST_SEEDS), evaluate(company, RulePolicy(), TEST_SEEDS)
     env = __import__("connect_tycoon").CompanyEnv(company=company)
@@ -26,6 +27,9 @@ library_name: numpy
 pipeline_tag: reinforcement-learning
 tags: [connect-ai-lab, deep-reinforcement-learning, gymnasium, connect-company, connect-tycoon, jev, jev-style, reinforcement-learning, ppo, decision-making, prefrontal-cortex, korean]
 ---
+
+{brand_header()}
+
 # {brain.name} · AI 사장 (CONNECT TYCOON)
 
 개발자 **{brain.researcher or '익명'}** · 회사의 가치 `{json.dumps(brain.values, ensure_ascii=False)}`
@@ -40,6 +44,8 @@ tags: [connect-ai-lab, deep-reinforcement-learning, gymnasium, connect-company, 
 | **{brain.name}** | **{me['profit']:.0f}만원** | {me['sat']:.0%} | {me['incidents']:.1f}건 | {me['human_over']:.1f}건 | {me['stockout_days']:.1f}일 |
 
 회사 규모(config): `{json.dumps(company.cfg, ensure_ascii=False)}`
+
+{simulator_gif()}
 
 ## JEV로 묻고 답하기
 
