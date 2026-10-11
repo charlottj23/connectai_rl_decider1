@@ -78,6 +78,34 @@ def win(app, surf, w, h, title, icon=None, close=True):
 
 
 # ── 타이틀 ────────────────────────────────────────────────────────────────
+_NET = {}
+
+
+def _neural(surf, w, h, t):
+    """타이틀 왼쪽의 뉴런 네트워크 · 점이 숨 쉬고, 연결선을 따라 신호가 흐릅니다."""
+    key = (w, h)
+    if key not in _NET:
+        import random
+        rnd = random.Random(7)
+        pts = [(rnd.uniform(8, w - 8), rnd.uniform(8, h - 8), rnd.uniform(0, 6.28)) for _ in range(34)]
+        edges = [(i, j, rnd.random()) for i in range(len(pts)) for j in range(i + 1, len(pts))
+                 if math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]) < 70]
+        _NET.clear(); _NET[key] = (pts, edges)
+    pts, edges = _NET[key]
+    layer = pygame.Surface((w, h), pygame.SRCALPHA)
+    for i, j, o in edges:
+        (x1, y1, _), (x2, y2, _) = pts[i], pts[j]
+        fade = min(1.0, max(0.15, (min(y1, y2) / h - 0.45) * 3))      # 글자가 있는 위쪽은 옅게, 아래쪽은 또렷하게
+        pygame.draw.line(layer, (208, 249, 145, int(34 * fade)), (x1, y1), (x2, y2))
+        k = (t * 0.35 + o) % 1.0
+        pygame.draw.circle(layer, (208, 249, 145, int(170 * fade)), (int(x1 + (x2 - x1) * k), int(y1 + (y2 - y1) * k)), 1)
+    for x, y, ph in pts:
+        g = 0.5 + 0.5 * math.sin(t * 1.4 + ph)
+        fade = min(1.0, max(0.15, (y / h - 0.45) * 3))
+        pygame.draw.circle(layer, (208, 249, 145, int((40 + 80 * g) * fade)), (int(x), int(y)), 2)
+    surf.blit(layer, (0, 0))
+
+
 def title(app, surf, dt):
     """타이틀 · 이 게임은 '기업 의사결정 모델을 강화학습으로 만드는 도구'로 시작합니다."""
     ui, f = app.ui, app.fonts
@@ -92,10 +120,10 @@ def title(app, surf, dt):
         pygame.draw.line(ov, (6, 9, 10, a), (i, 0), (i, vh))
     surf.blit(ov, (0, 0))
     cover(surf, (0, 0, colw + 16, vh))
+    _neural(surf, colw + 16, vh, t)
     x0 = 18
     y = max(14, vh // 2 - 180)
-    ui.label(surf, "CONNECT AI LAB", x0, y, (150, 156, 152), bold=True)
-    pygame.draw.rect(surf, ACID, (x0 + app.fonts.width("CONNECT AI LAB", bold=True) + 6, y + 5, 22, 2))
+    ui.label(surf, "RL AI COMPANY DECISION MAKING MODEL", x0, y, ACID, bold=True)
     y += 16
     big = f.text("CONNECT", WHITE, bold=True, k=3)
     surf.blit(big, (x0 - 1, y)); y += big.get_height() - 4
@@ -109,7 +137,7 @@ def title(app, surf, dt):
     pygame.draw.circle(surf, (int(30 + 40 * glow), int(44 + 60 * glow), int(20 + 22 * glow)), (bx_ + b.get_width() // 2, y + 14), 21, 1)
     surf.blit(b, (bx_, y - 4 + int(math.sin(t * 2) * 2)))
     y += big2.get_height() + 6
-    ui.label(surf, "시뮬레이터로 의사결정 모델을 학습시킵니다", x0, y, (214, 220, 212)); y += 22
+    y = ui.para(surf, "강화학습으로 회사 의사결정 모델을 만듭니다", x0, y, colw - 4, (214, 220, 212), gap=14) + 8
     c = app.saved
     bw = colw - 4
     if c is not None and (c.month > 1 or (c.studio or {}).get("versions")):
@@ -134,6 +162,7 @@ def title(app, surf, dt):
         y += 34
     if ui.button(surf, (x0, y, bw, 18), "끝내기", "cross", kind="ghost"):
         app.quit = True
+    ui.label(surf, "CONNECT AI LAB × AI CITY BUILDERS", x0, vh - 28, (150, 156, 152), bold=True)
     ui.label(surf, "오픈소스 · Apache-2.0", x0, vh - 14, (90, 98, 94))
     if app.modal == "help":
         cover(surf, (0, 0, vw, vh))

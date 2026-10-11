@@ -26,6 +26,7 @@ SHORT_ACT = {"즉시 처리": "바로 처리", "일반 처리": "순서대로", 
              "부분 환불": "절반 환불", "거절": "거절", "허용": "통과", "차단": "막기"}
 QUESTION = {"security": "이 결제를 통과시킬까요?", "refund": "이 환불 요청, 어떻게 할까요?", "cs": "이 문의를 어디로 보낼까요?"}
 REWARD_TIP = {"이익": "이익 · 번 돈이 얼마나 중요한가", "고객 만족": "고객 만족 · 손님 기분이 얼마나 중요한가", "위험": "위험 회피 · 사고를 얼마나 피할까"}
+STREAM_NAME = {"staffing": "인력", "inventory": "재고", "marketing": "광고", "cs": "문의", "refund": "환불", "security": "결제"}
 REAL_TIP = "학습에 쓰지 않은 실제 기록으로 다시 채점 · 카드 거래 검토 대기열(ULB) · 소매 · 호텔 · 자전거 대여의 하루 수요"
 
 
@@ -158,6 +159,7 @@ class Studio:
             self.feedback["t"] += dt
             if self.feedback["t"] > 1.8: self.feedback = None
         self.hud(surf)
+        self.stream(surf)
         if a.panel:
             self.panel(surf)
         if self.review:
@@ -198,6 +200,41 @@ class Studio:
         surf.blit(art.icon("coin"), (right - 20 - w_, 5))
         if ui.hover((right - 22 - w_, 0, w_ + 16, HEAD)): ui.tip = "이번 달 이익 (하루가 끝날 때마다 쌓입니다)"
 
+    def stream(self, surf):
+        """실시간 판단 스트림 · 모델의 판단이 상황 → 행동(확신) → 보상으로 한 줄씩 흘러갑니다 (S → A → R)."""
+        a, ui = self.app, self.app.ui
+        if self.review or not a.feed or self.job == "v0":
+            return
+        w = min(236, a.world_rect.width - 12)
+        top = HEAD + 6
+        n = max(2, min(6, (a.world.top - 40 - top - 24) // 13))      # 빌딩 간판 위 하늘에 들어가는 만큼
+        rows = [it["x"] for it in a.feed[-n:]]
+        h = 20 + len(rows) * 13 + 4
+        r = pygame.Rect(6, top, w, h)
+        cover(surf, r)
+        bg = pygame.Surface(r.size, pygame.SRCALPHA)
+        pygame.draw.rect(bg, (6, 9, 10, 238), bg.get_rect(), border_radius=8)
+        pygame.draw.rect(bg, (208, 249, 145, 70), bg.get_rect(), 1, border_radius=8)
+        surf.blit(bg, r.topleft)
+        on = int(a.t_real * 2) % 2 == 0
+        pygame.draw.circle(surf, ACID if on else (60, 80, 50), (r.x + 9, r.y + 9), 3)
+        ui.label(surf, "LIVE", r.x + 16, r.y + 3, ACID, bold=True)
+        ui.label(surf, "상황 → 행동 · 확신 · 보상", r.right - 6, r.y + 3, MUTED, right=True)
+        for i, x in enumerate(rows):
+            y = r.y + 19 + i * 13
+            last = i == len(rows) - 1
+            col = WHITE if last else (150, 158, 154)
+            if last:
+                pygame.draw.rect(surf, ACID, (r.x + 3, y + 2, 2, 9))
+            surf.blit(art.icon(DEPT_ICON[x["dept"]]), (r.x + 8, y + 1))
+            ev, act = x.get("ev") or {}, SHORT_ACT.get(x["action"], x["action"])
+            what = f"{man(ev['amount'])} → {act}" if x["dept"] in ("refund", "security") and "amount" in ev else f"{STREAM_NAME[x['dept']]} → {act}"
+            ui.label(surf, what, r.x + 21, y, col)
+            rw = x.get("reward", 0.0)
+            ui.label(surf, f"{rw:+.1f}", r.right - 6, y, (ACID if rw >= 0 else RED) if last else ((120, 150, 100) if rw >= 0 else (170, 90, 80)), right=True)
+            conf = "규정" if x.get("ruled") else (f"{x['jev']['response']['answers']['decision'].get('confidence', 0):.0%}" if x.get("jev") else "")
+            ui.label(surf, conf, r.right - 44, y, col, right=True)
+
     def panel(self, surf):
         a, ui = self.app, self.app.ui
         x0 = a.vw - PANEL
@@ -212,7 +249,7 @@ class Studio:
         b = art.brain_ceo("think" if a.trainer.running else "idle", brand=True)
         b = pygame.transform.scale(b, (b.get_width() * 2, b.get_height() * 2))
         surf.blit(b, (x + 4, y + 10 + (int(math.sin(a.t_real * 6) * 2) if a.trainer.running else 0)))
-        ui.label(surf, "MODEL", x + 44, y + 6, MUTED, bold=True)
+        ui.label(surf, "RL MODEL", x + 44, y + 6, MUTED, bold=True)
         ui.label(surf, cur["name"] if cur else "—", x + 44, y + 18, WHITE, bold=True, k=2)
         if cur:
             ui.label(surf, man(cur["profit"]), x + w - 6, y + 18, ACID, bold=True, k=2, right=True)
@@ -244,6 +281,11 @@ class Studio:
             ui.label(surf, f"학습 중 {it}/{LENGTH}", x + 6, y + 3, ACID, bold=True)
         else:
             nxt = f"v{len(self.versions)}"
+            if self.job is None:                          # 숨 쉬듯 빛나는 학습 버튼
+                g = 0.5 + 0.5 * math.sin(a.t_real * 2.4)
+                glow = pygame.Surface((w + 10, 36), pygame.SRCALPHA)
+                pygame.draw.rect(glow, (208, 249, 145, int(18 + 34 * g)), glow.get_rect(), border_radius=16)
+                surf.blit(glow, (x - 5, y - 5))
             if ui.button(surf, (x, y, w, 26), f"학습  →  {nxt}", "play", kind="acid", enabled=self.job is None):
                 self.train()
         y += 30
