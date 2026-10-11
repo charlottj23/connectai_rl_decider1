@@ -27,6 +27,13 @@ SHORT_ACT = {"즉시 처리": "바로 처리", "일반 처리": "순서대로", 
 QUESTION = {"security": "이 결제를 통과시킬까요?", "refund": "이 환불 요청, 어떻게 할까요?", "cs": "이 문의를 어디로 보낼까요?"}
 REWARD_TIP = {"이익": "이익 · 번 돈이 얼마나 중요한가", "고객 만족": "고객 만족 · 손님 기분이 얼마나 중요한가", "위험": "위험 회피 · 사고를 얼마나 피할까"}
 STREAM_NAME = {"staffing": "인력", "inventory": "재고", "marketing": "광고", "cs": "문의", "refund": "환불", "security": "결제"}
+# 카드에 보이는 손님의 사정 · 엔진의 사유 · 등급 · 신호를 사람이 읽는 말로
+REFUND_QUOTE = {"불량": "받아 보니 고장 나 있어요. 환불해 주세요.", "미배송": "주문한 물건이 아직 안 왔어요. 환불해 주세요.",
+                "단순 변심": "마음이 바뀌었어요. 환불해 주세요.", "의심": "이유는 말하기 어렵고요, 그냥 환불해 주세요."}
+TIER_DESC = {"신규": "신규 · 처음 산 손님", "단골": "단골 · 자주 사는 손님", "VIP": "VIP · 가장 많이 사는 손님"}
+STAKES = {"refund": "악용이면 환불한 만큼 손해 · 정상 손님을 거절하면 만족 크게 하락 (VIP는 2배)",
+          "security": "사기를 통과시키면 금액만큼 손해 · 정상 결제를 막으면 금액의 30% 손해",
+          "cs": "위험한 문의를 사람이 안 보면 사고 · 급한 문의를 미루면 만족 하락"}
 REAL_TIP = "학습에 쓰지 않은 실제 기록으로 다시 채점 · 카드 거래 검토 대기열(ULB) · 소매 · 호텔 · 자전거 대여의 하루 수요"
 
 
@@ -352,7 +359,8 @@ class Studio:
         resp = x["jev"]["response"]["answers"]["decision"]
         W = 290
         lines = f.wrap(ev["message"], W - 24)[:3] if dept == "cs" else []
-        H = 22 + 30 + (len(lines) * 13 + 6 if dept == "cs" else 48) + 58
+        stakes = STAKES[dept].split(" · ")                              # 두 줄 · 끊는 곳을 정해 둡니다
+        H = 22 + 30 + (len(lines) * 13 + 6 if dept == "cs" else 76) + 13 * len(stakes) + 6 + 58
         wr = a.world_rect
         r = pygame.Rect(wr.centerx - W // 2, HEAD + 30, W, H)
         cover(surf, r.inflate(4, 4))
@@ -367,16 +375,24 @@ class Studio:
         yy = r.y + 22 + 32
         if dept in ("refund", "security"):
             ui.label(surf, man(ev["amount"]) + "원", r.x + 10, yy, WHITE, bold=True, k=2)
-            chips = [ev["reason"], ev["tier"]] if dept == "refund" else [s for s, on in (("새 기기", ev["new_device"]), ("해외", ev["overseas"])) if on]
-            cx = r.x + 90
-            for c in chips:
-                wc = f.width(c) + 10
-                pygame.draw.rect(surf, (24, 30, 28), (cx, yy + 4, wc, 14), border_radius=7)
-                ui.label(surf, c, cx + 5, yy + 4, WHITE)
-                cx += wc + 4
+            ax = r.x + 16 + f.width(man(ev["amount"]) + "원", bold=True, k=2)
+            if dept == "refund":
+                who, sub = TIER_DESC.get(ev["tier"], ev["tier"]), f"환불 사유 · {ev['reason']}"
+                quote = REFUND_QUOTE.get(ev["reason"], "환불해 주세요.")
+            else:
+                sig = [t for t, on in (("새 기기에서", ev["new_device"]), ("해외에서", ev["overseas"]), ("짧은 시간에 여러 번", ev["velocity"] > 0.5)) if on]
+                who, sub = "온라인 결제", "평소와 다른 점 " + str(len(sig)) + "개"
+                quote = " · ".join(sig) + " 결제" if sig else "평소 쓰던 기기 · 국내 · 평소 속도로 결제"
+            ui.label(surf, who, ax, yy + 2, WHITE, bold=True)
+            ui.label(surf, sub, ax, yy + 15, MUTED)
             yy += 30
+            qb = pygame.Rect(r.x + 10, yy, W - 20, 18)                 # 손님의 말 (말풍선)
+            pygame.draw.rect(surf, (24, 30, 28), qb, border_radius=6)
+            pygame.draw.polygon(surf, (24, 30, 28), [(qb.x + 12, qb.y), (qb.x + 18, qb.y - 5), (qb.x + 22, qb.y)])
+            ui.label(surf, ("“" + quote + "”") if dept == "refund" else quote, qb.x + 7, qb.y + 3, WHITE)
+            yy += 26
             fs = ev["fraud_score"]
-            ui.label(surf, "사기 점수", r.x + 10, yy, MUTED)
+            ui.label(surf, "악용 의심" if dept == "refund" else "사기 의심", r.x + 10, yy, MUTED)
             bx, bw = r.x + 62, W - 110
             pygame.draw.rect(surf, (30, 36, 34), (bx, yy + 4, bw, 6), border_radius=3)
             pygame.draw.rect(surf, ACID if fs < 0.5 else RED, (bx, yy + 4, int(bw * fs), 6), border_radius=3)
@@ -385,6 +401,8 @@ class Studio:
         else:
             for k_, line in enumerate(lines):
                 ui.label(surf, line, r.x + 10, yy + k_ * 13, WHITE)
+        for k_, line in enumerate(stakes):                                  # 각 선택의 결과 (결과표)
+            ui.label(surf, line, r.x + 10, r.bottom - 60 - 13 * (len(stakes) - k_), MUTED)
         acts, keys = ct.DEPTS[dept]["actions"], ct.DEPTS[dept]["keys"]
         n = len(acts)
         bw = (W - 16 - 4 * (n - 1)) // n
