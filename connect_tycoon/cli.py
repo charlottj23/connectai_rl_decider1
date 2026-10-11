@@ -156,7 +156,7 @@ def cmd_push(args):
         sys.exit(f"두뇌 이름 {b.name!r}은 허깅페이스 저장소 이름으로 쓸 수 없습니다. --repo 아이디/connect-company-영문이름 을 붙여 주세요")
     repo = args.repo or f"{api.whoami()['name']}/connect-company-{safe}"
     api.create_repo(repo, exist_ok=True)
-    co = ct.make_company(config=b.spec["company"].get("config"))
+    co = ct.make_company(config=b.spec["company"].get("config"), profile=b.spec["company"].get("profile"))   # 학습한 회사 그대로
     card = model_card(b, co, repo)
     api.upload_file(path_or_fileobj=args.brain, path_in_repo="brain.json", repo_id=repo)
     api.upload_file(path_or_fileobj=card.encode("utf-8"), path_in_repo="README.md", repo_id=repo)

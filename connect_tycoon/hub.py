@@ -23,7 +23,8 @@ def model_card(brain, company, repo):
 license: apache-2.0
 language: [ko]
 library_name: numpy
-tags: [connect-ai-lab, connect-company, connect-tycoon, jev, jev-style, reinforcement-learning, ppo, decision-making, prefrontal-cortex, korean]
+pipeline_tag: reinforcement-learning
+tags: [connect-ai-lab, deep-reinforcement-learning, gymnasium, connect-company, connect-tycoon, jev, jev-style, reinforcement-learning, ppo, decision-making, prefrontal-cortex, korean]
 ---
 # {brain.name} · AI 사장 (CONNECT TYCOON)
 

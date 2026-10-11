@@ -20,7 +20,8 @@ def card(repo, results=None, meta=None, backend="mlx", base=BASE_MODEL):
     table = "\n".join(["| 모델 | 시험 문제 정답률 | 후회 (작을수록 좋음) | 시뮬레이터 한 달 이익 | 실제 카드 거래 · 손실 줄임 |",
                        "|---|---|---|---|---|"] + rows) if rows else "학습 뒤 `connect-tycoon llm eval` 결과가 여기에 들어갑니다."
     m = meta or {}
-    load = (f'from mlx_lm import load\nmodel, tok = load("{base}", adapter_path="adapter")' if backend == "mlx" else
+    load = (f'from huggingface_hub import snapshot_download\nfrom mlx_lm import load\n'
+            f'model, tok = load("{base}", adapter_path=snapshot_download("{repo}") + "/adapter")   # Mac · MLX' if backend == "mlx" else
             f'from transformers import AutoModelForCausalLM, AutoTokenizer\nfrom peft import PeftModel\n'
             f'tok = AutoTokenizer.from_pretrained("{base}")\nmodel = PeftModel.from_pretrained(AutoModelForCausalLM.from_pretrained("{base}"), "{repo}")')
     return f"""---
@@ -28,7 +29,8 @@ license: apache-2.0
 base_model: {base}
 library_name: {"mlx" if backend == "mlx" else "peft"}
 language: [ko]
-tags: [reinforcement-learning, decision-making, connect-tycoon, connect-ai-lab, lora]
+pipeline_tag: reinforcement-learning
+tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-making, gymnasium, connect-tycoon, connect-ai-lab, lora, qwen3.5]
 ---
 
 # RL AI COMPANY DECISION MAKING MODEL
@@ -48,6 +50,9 @@ tags: [reinforcement-learning, decision-making, connect-tycoon, connect-ai-lab, 
 ## 성적
 
 {table}
+
+첫 실험 결과입니다. 회사 운영은 처음 보는 2달 평균이라 표본이 작고, 선생님 정책(시뮬레이터에서 PPO로 배운 작은 모델)보다는 아직 아래입니다.
+{m.get("note", "")}
 
 ## 쓰는 법
 
