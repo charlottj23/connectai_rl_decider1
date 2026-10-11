@@ -199,7 +199,10 @@ def cmd_llm(args):
         from .llm.hub import push
         res = _json.load(open(args.results, encoding="utf-8")) if args.results else None
         meta = _json.load(open(os.path.join(args.data, "meta.json"), encoding="utf-8")) if args.data and os.path.exists(os.path.join(args.data, "meta.json")) else None
-        print(push(args.adapter[0], repo=args.repo, results=res, meta=meta))
+        from huggingface_hub import HfApi
+        from .llm.hub import repo_name
+        repo = args.repo or f"{HfApi().whoami()['name']}/{repo_name(args.name or HfApi().whoami()['name'], args.version)}"
+        print(push(args.adapter[0], repo=repo, results=res, meta=meta))
 
 
 def _utf8_console():
@@ -242,6 +245,7 @@ def main(argv=None):
     s.add_argument("--steps", type=int, default=150); s.add_argument("--batch", type=int, default=8); s.add_argument("--beta", type=float, default=0.05); s.add_argument("--max-rows", type=int, default=1500)
     s.add_argument("--months", type=int, default=0, help="eval: 시뮬레이터에서 운영해 볼 달 수 (느림)"); s.add_argument("--save")
     s.add_argument("--results", help="push: eval --save로 저장한 성적"); s.add_argument("--repo")
+    s.add_argument("--name", help="push: 업로드 이름 connectailab-이름-버전의 이름 (영문)"); s.add_argument("--version", default="v1")
     s.set_defaults(fn=cmd_llm)
     s = sub.add_parser("jev", help="JEV 기록 내보내기"); s.add_argument("--brain", default="default"); s.add_argument("--seed", type=int, default=7000)
     s.add_argument("--months", type=int, default=1); s.add_argument("--out", default="jev_month.jsonl"); s.add_argument("--upgrades", help=UPGRADE_HELP); s.add_argument("--config")

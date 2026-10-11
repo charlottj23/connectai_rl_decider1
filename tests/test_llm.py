@@ -65,3 +65,10 @@ def test_build_writes_splits_and_meta(tmp_path):
 def test_model_card_has_results_and_brand():
     c = card("me/x", {"강화학습": {"accuracy": 0.61, "regret": 1.2, "profit": 900.0, "card": {"saved": 0.9, "caught": 160, "fraud": 177}}})
     assert "RL AI COMPANY DECISION MAKING MODEL" in c and "61.0%" in c and "CONNECT AI LAB" in c and "base_model: Qwen/Qwen3.5-0.8B" in c
+
+
+def test_upload_name_rule():
+    from connect_tycoon.llm.hub import repo_name
+    assert repo_name("Jay", "v1") == "connectailab-jay-v1"
+    assert repo_name("Min Ji", "V2") == "connectailab-min-ji-v2"
+    assert repo_name("team3", "v1", "teacher") == "connectailab-team3-v1-teacher"

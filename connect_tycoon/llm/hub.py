@@ -103,10 +103,20 @@ tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-makin
 """
 
 
+def repo_name(name, version="v1", kind=None):
+    """업로드 이름 규칙 · connectailab-이름-버전 (예: connectailab-jay-v1 · 선생님 정책은 connectailab-jay-v1-teacher)."""
+    import re
+    clean = lambda s: re.sub(r"[^a-z0-9.]+", "-", str(s).lower()).strip("-.")
+    n, v = clean(name), clean(version) or "v1"
+    if not n:
+        raise ValueError("이름은 영문 · 숫자로 적어 주세요 (예: jay, minji, team3)")
+    return f"connectailab-{n}-{v}" + (f"-{clean(kind)}" if kind else "")
+
+
 def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=None, private=False, results_png=None):
     from huggingface_hub import HfApi
     api = HfApi(token=token or os.environ.get("HF_TOKEN"))
-    repo = repo or f"{api.whoami()['name']}/rl-ai-company-decision-model"
+    repo = repo or f"{api.whoami()['name']}/{repo_name(api.whoami()['name'])}"
     api.create_repo(repo, exist_ok=True, private=private)
     api.upload_folder(folder_path=adapter_dir, path_in_repo="adapter" if backend == "mlx" else ".", repo_id=repo,
                       allow_patterns=["adapters.safetensors", "adapter_config.json", "adapter_model.safetensors", "*.json"])
