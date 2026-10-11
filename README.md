@@ -110,7 +110,11 @@ connect-tycoon llm eval --data llm_data --adapter adapters/sft --adapter adapter
 connect-tycoon llm push --adapter adapters/rl --data llm_data --results eval.json
 ```
 
-**Colab (GPU · PyTorch)** · [`notebooks/rl_decision_model_qwen_colab.ipynb`](notebooks/rl_decision_model_qwen_colab.ipynb) · 같은 문제집 · 같은 손실 · GGUF 변환까지
+**Colab (GPU · PyTorch)** · 시뮬레이터 → Qwen 지도학습 → 강화학습 → 내 Hugging Face 계정에 업로드까지 한 번에
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/rl_decision_model_qwen_colab.ipynb)
+
+첫 결과 · [WonseokJayJung/rl-ai-company-decision-model-0.8b](https://huggingface.co/WonseokJayJung/rl-ai-company-decision-model-0.8b) · 학습 전 한 달 −1,340만 → 지도학습 +635만 → 강화학습 +757만 · 실제 사기 거래 손실 37% → 71% 줄임
 
 강화학습한 작은 정책의 판단을 JEV 형식 데이터로 내보낼 수도 있습니다: `connect-tycoon jev --brain my-model.json --months 10 --out jev.jsonl`
 

@@ -72,13 +72,37 @@ print(r)
 print("선생님(작은 정책)", round(ct.evaluate(company, teacher, seeds=range(7000, 7002))["profit"]), "만원")""", None),
     ("md", """## 7 · Hugging Face에 올리기
 
-🔑 `HF_TOKEN`을 쓰고, 토큰은 코드에 적지 않습니다."""),
+1. https://huggingface.co/settings/tokens 에서 **Write** 토큰을 만듭니다.
+2. Colab 왼쪽 🔑(보안 비밀)에 이름 `HF_TOKEN`, 값에 토큰을 넣고 **노트북 액세스**를 켭니다.
+3. 아래 셀을 실행하면 내 계정에 모델이 올라갑니다. 모델 카드(성적표 · 만든 방법 · 쓰는 법)와 **Reinforcement Learning** 분류가 함께 붙습니다.
+
+토큰은 코드에 적지 않습니다."""),
     ("code", """from google.colab import userdata
+from huggingface_hub import HfApi
 from connect_tycoon.llm.hub import push
-import json
+import json, os
+
+try:
+    HF_TOKEN = userdata.get("HF_TOKEN")
+except Exception:
+    HF_TOKEN = None
+assert HF_TOKEN, "왼쪽 🔑에 HF_TOKEN(Write 권한)을 넣고 노트북 액세스를 켜 주세요"
+me = HfApi(token=HF_TOKEN).whoami()["name"]
+
+MODEL_NAME = "rl-ai-company-decision-model-0.8b"     #@param {type:"string"}
+PRIVATE = False                                      #@param {type:"boolean"}
 meta = json.load(open("llm_data/meta.json"))
-REPO_ID = None                                           # 예: "내아이디/rl-ai-company-decision-model" · 비우면 자동
-print(push("adapters/rl", repo=REPO_ID, results=results, meta=meta, backend="torch", token=userdata.get("HF_TOKEN")))""", None),
+url = push("adapters/rl", repo=f"{me}/{MODEL_NAME}", results=results, meta=meta, backend="torch", token=HF_TOKEN, private=PRIVATE)
+print("올라갔습니다 ·", url)""", None),
+    ("md", """### (선택) 선생님 정책도 올리기
+
+시뮬레이터에서 PPO로 배운 작은 정책(brain.json)입니다. 언어 모델의 선생님이자, 그 자체로 강화학습 모델입니다."""),
+    ("code", """spec = ct.CompanyBrain.make_spec(ct.CompanyBrain.default().spec, teacher, name=f"{me}-teacher", values=VALUES,
+                                 researcher=me, config=company.cfg, profile="general",
+                                 results={"test_profit": ct.evaluate(company, teacher)["profit"]})
+ct.CompanyBrain(spec).save("teacher.json")
+os.environ["HF_TOKEN"] = HF_TOKEN
+!connect-tycoon push --brain teacher.json --repo {me}/connect-company-teacher""", None),
     ("md", """## (선택) 하나의 모델로 합치고 GGUF로 · Ollama · LM Studio
 
 LoRA를 바탕 모델에 합친 뒤 llama.cpp로 GGUF를 만듭니다."""),
