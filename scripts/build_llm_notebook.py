@@ -24,6 +24,7 @@ CELLS = [
     ("code", f"""# 설치 (2~3분)
 !pip -q install "connect-tycoon @ git+{REPO}" "transformers==5.18.0" peft accelerate huggingface_hub
 !pip -q install flash-linear-attention || echo "(빠른 계산 모듈 없이 진행 · 조금 느릴 뿐 결과는 같습니다)"
+!pip -q uninstall -y torchao   # Colab 기본 torchao(0.10)가 최신 peft와 맞지 않습니다 · 이 학습에는 필요 없습니다
 import torch, connect_tycoon as ct
 print("CONNECT TYCOON", ct.__version__, "· GPU", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "없음 (런타임을 GPU로 바꾸세요)")""", "install"),
     ("md", """## 1 · 선생님 · 내 brain.json 쓰기 또는 새로 학습
