@@ -677,5 +677,8 @@ def summarize(days):
             "sales": sum(d["sales"] for d in days)}
 
 
-def main(brains=(), size=(1280, 800), fullscreen=False, reset=False):
-    App(brains=brains, size=size, fullscreen=fullscreen, reset=reset).run()
+def main(brains=(), size=(1280, 800), fullscreen=False, reset=False, sfx=True, music=True):
+    app = App(brains=brains, size=size, fullscreen=fullscreen, reset=reset)
+    if not sfx: app.audio.sfx_on = False; app.career.settings["sfx"] = False          # 촬영 · 강의용 (효과음 끄기)
+    if not music: app.audio.set_music(False); app.career.settings["music"] = False
+    app.run()

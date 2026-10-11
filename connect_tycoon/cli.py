@@ -43,7 +43,7 @@ def cmd_play(args):
         sys.exit("게임에는 pygame-ce가 필요합니다:  pip install 'connect-tycoon[game]'")
     from .game.app import main
     w, h = (int(v) for v in args.size.lower().split("x"))
-    main(brains=args.brain or (), size=(w, h), fullscreen=args.fullscreen, reset=args.reset)
+    main(brains=args.brain or (), size=(w, h), fullscreen=args.fullscreen, reset=args.reset, sfx=not args.no_sfx, music=not args.no_music)
 
 
 def cmd_train(args):
@@ -221,6 +221,7 @@ def main(argv=None):
     sub = p.add_subparsers(dest="cmd")
     s = sub.add_parser("play", help="게임"); s.add_argument("--brain", action="append", help="두뇌 추가 (경로 또는 hf:아이디/저장소)")
     s.add_argument("--size", default="1280x800"); s.add_argument("--fullscreen", action="store_true"); s.add_argument("--reset", action="store_true", help="새 회사로 시작")
+    s.add_argument("--no-sfx", action="store_true", help="효과음 끄기"); s.add_argument("--no-music", action="store_true", help="배경 음악 끄기")
     s.set_defaults(fn=cmd_play)
     s = sub.add_parser("train", help="두뇌 키우기"); s.add_argument("--name", default="my-company"); s.add_argument("--researcher", default="")
     s.add_argument("--profit", type=float, default=1.0); s.add_argument("--sat", type=float, default=1.0); s.add_argument("--risk", type=float, default=1.0)
