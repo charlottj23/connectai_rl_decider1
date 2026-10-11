@@ -12,3 +12,7 @@ frames/
 .DS_Store
 .ruff_cache/
 docs/youtube/notice/
+runs/
+llm_data/
+llm_out/
+adapters/

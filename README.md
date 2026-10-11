@@ -83,20 +83,36 @@ python scripts/calibrate.py --data ~/connect-data    # 공개 데이터로 프�
 회사의 판단 하나는 JEV 요청 하나입니다. 상황(`state`)과 선택지(`criteria`)를 받아 `choice` · `probabilities` · `confidence`로 답합니다.
 OpenRouter의 `typesafe/jev-1.13`과 같은 모양이라, JEV를 말하는 모델이면 무엇이든 이 시뮬레이터에서 학습하고 시험할 수 있습니다. → [docs/JEV.md](docs/JEV.md)
 
-## 언어 모델에 옮기기
+## 언어 모델(Qwen)로 옮기기 · RL AI COMPANY DECISION MAKING MODEL
 
-강화학습으로 배운 판단을 C1 · JEV 같은 언어 모델에 옮기는 데이터도 만듭니다.
-판단마다 선택지를 모두 끝까지 다시 돌려 본 결과가 정답 라벨이 됩니다.
+시뮬레이터에서 강화학습한 작은 정책을 선생님으로, **Qwen3.5-0.8B**가 글로 된 문제를 읽고 판단하도록 학습합니다.
+**강화학습 → 지도학습 → 다시 강화학습** 순서입니다.
+
+| 단계 | 하는 일 |
+|---|---|
+| ① 문제집 | 판단마다 선택지를 하나씩 바꿔 그 달을 끝까지 다시 돌려, 선택지별 점수를 매깁니다 |
+| ② 지도학습 | 점수가 가장 높은 보기 글자를 따라 배웁니다 (LoRA) |
+| ③ 강화학습 | 보기 전체를 한 묶음으로 보고, 점수가 평균보다 높은 보기의 확률을 올립니다 (묶음 표준화 + KL) |
+| ④ 채점 | 시험 문제 정답률 · Qwen을 회사 사장 자리에 앉혀 한 달 운영 · 실제 데이터 시험 |
+| ⑤ 공개 | Hugging Face에 어댑터 + 모델 카드 (`HF_TOKEN`) |
+
+문제 하나는 C1과 같은 모양입니다: 상황 · 질문 · 보기(A, B, C…)를 받고 글자 하나로 답하며, 보기 글자의 확률이 선택지별 확률입니다.
+
+**Mac (Apple Silicon · MLX)**
 
 ```bash
-connect-tycoon jev --brain my-model.json --months 10 --out jev.jsonl
+pip install -e ".[llm-mac]"
+connect-tycoon train --profile general --name teacher --out teacher.json
+connect-tycoon llm data --teacher teacher.json --out llm_data --train-months 10
+connect-tycoon llm sft  --data llm_data --out adapters/sft
+connect-tycoon llm rl   --data llm_data --from adapters/sft --out adapters/rl
+connect-tycoon llm eval --data llm_data --adapter adapters/sft --adapter adapters/rl --months 2 --save eval.json
+connect-tycoon llm push --adapter adapters/rl --data llm_data --results eval.json
 ```
 
-```python
-from connect_tycoon import labels
-rows = labels.counterfactual(company, policy, seed=7000)
-labels.export(rows, company, sft_path="sft.jsonl", pairs_path="dpo.jsonl")
-```
+**Colab (GPU · PyTorch)** · [`notebooks/rl_decision_model_qwen_colab.ipynb`](notebooks/rl_decision_model_qwen_colab.ipynb) · 같은 문제집 · 같은 손실 · GGUF 변환까지
+
+강화학습한 작은 정책의 판단을 JEV 형식 데이터로 내보낼 수도 있습니다: `connect-tycoon jev --brain my-model.json --months 10 --out jev.jsonl`
 
 ## 개발자용
 

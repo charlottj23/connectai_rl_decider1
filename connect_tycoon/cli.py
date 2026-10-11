@@ -163,6 +163,45 @@ def cmd_push(args):
     print(f"https://huggingface.co/{repo}")
 
 
+def cmd_llm(args):
+    """언어 모델 단계: data → sft → rl → eval → push (Mac은 MLX, Colab은 노트북의 PyTorch 경로)."""
+    import json as _json
+
+    import connect_tycoon as ct
+    from .llm import data as D
+    if args.step == "data":
+        co = ct.make_company(profile=args.profile)
+        teacher = ct.CompanyBrain.load(args.teacher)
+        splits = {"train": range(20000, 20000 + args.train_months), "valid": range(21000, 21002), "test": range(22000, 22002)}
+        print(D.build(co, teacher, args.out, splits=splits, stride=args.stride))
+        return
+    from .llm import train_mlx as M
+    if args.step == "sft":
+        M.sft(args.data, args.out, epochs=args.epochs, lr=args.lr)
+    elif args.step == "rl":
+        M.rl(args.data, args.start, args.out, steps=args.steps, batch=args.batch, lr=args.lr, beta=args.beta, max_rows=args.max_rows)
+    elif args.step == "eval":
+        from .llm.policy import LLMPolicy, report
+        co = ct.make_company(profile=args.profile)
+        test = D.load(args.data, "test")
+        out = {}
+        for ad in [None] + (args.adapter or []):                 # 학습 전 Qwen도 같은 시험으로
+            sc = M.Scorer(adapter=ad)
+            name = "Qwen 학습 전" if ad is None else os.path.basename(os.path.normpath(ad))
+            out[name] = D.agreement(test, sc.pick)
+            if args.months:
+                out[name].update(report(LLMPolicy(sc, co.values), co, months=args.months, demand_months=0))
+            print(name, _json.dumps(out[name], ensure_ascii=False))
+        if args.save:
+            with open(args.save, "w", encoding="utf-8") as f:
+                _json.dump(out, f, ensure_ascii=False, indent=1)
+    elif args.step == "push":
+        from .llm.hub import push
+        res = _json.load(open(args.results, encoding="utf-8")) if args.results else None
+        meta = _json.load(open(os.path.join(args.data, "meta.json"), encoding="utf-8")) if args.data and os.path.exists(os.path.join(args.data, "meta.json")) else None
+        print(push(args.adapter[0], repo=args.repo, results=res, meta=meta))
+
+
 def _utf8_console():
     """윈도우 콘솔(cp1252 등)에서도 한글이 깨지거나 멈추지 않도록 출력을 UTF-8로 바꿉니다."""
     for stream in (sys.stdout, sys.stderr):
@@ -193,6 +232,17 @@ def main(argv=None):
     s = sub.add_parser("backtest", help="실제 데이터 시험"); s.add_argument("--brain", action="append")
     s.add_argument("--upgrades", help=UPGRADE_HELP); s.add_argument("--config"); s.add_argument("--profile", default="general", help=PROFILE_HELP)
     s.set_defaults(fn=cmd_backtest)
+    s = sub.add_parser("llm", help="언어 모델(Qwen)에 옮기고 강화학습 · data → sft → rl → eval → push")
+    s.add_argument("step", choices=["data", "sft", "rl", "eval", "push"])
+    s.add_argument("--teacher", default="default", help="선생님 두뇌 (brain.json · default · hf:아이디/저장소)")
+    s.add_argument("--profile", default="general", help=PROFILE_HELP); s.add_argument("--train-months", type=int, default=10)
+    s.add_argument("--stride", type=int, default=1); s.add_argument("--data", default="llm_data"); s.add_argument("--out", default="llm_out")
+    s.add_argument("--from", dest="start", help="강화학습 출발 어댑터 (보통 sft 결과)"); s.add_argument("--adapter", action="append")
+    s.add_argument("--epochs", type=float, default=1.0); s.add_argument("--lr", type=float, default=1e-4)
+    s.add_argument("--steps", type=int, default=150); s.add_argument("--batch", type=int, default=8); s.add_argument("--beta", type=float, default=0.05); s.add_argument("--max-rows", type=int, default=1500)
+    s.add_argument("--months", type=int, default=0, help="eval: 시뮬레이터에서 운영해 볼 달 수 (느림)"); s.add_argument("--save")
+    s.add_argument("--results", help="push: eval --save로 저장한 성적"); s.add_argument("--repo")
+    s.set_defaults(fn=cmd_llm)
     s = sub.add_parser("jev", help="JEV 기록 내보내기"); s.add_argument("--brain", default="default"); s.add_argument("--seed", type=int, default=7000)
     s.add_argument("--months", type=int, default=1); s.add_argument("--out", default="jev_month.jsonl"); s.add_argument("--upgrades", help=UPGRADE_HELP); s.add_argument("--config")
     s.set_defaults(fn=cmd_jev)

@@ -65,7 +65,7 @@ def card(policy, company=None, rules=None):
     return out
 
 
-def demand(policy, company=None, sources=("retail", "hotel", "bike")):
+def demand(policy, company=None, sources=("retail", "hotel", "bike"), months=None):
     """실제 하루 수요 기록으로 한 달씩 다시 돌립니다 → 기록마다 평균 한 달 이익 · 품절일 · 만족."""
     from . import make_company
     from .train import evaluate
@@ -74,11 +74,11 @@ def demand(policy, company=None, sources=("retail", "hotel", "bike")):
     out = {}
     for name in sources:
         seq = series[name]
-        months = len(seq) // co.days
+        n = len(seq) // co.days if months is None else min(months, len(seq) // co.days)
         c = co.with_config(co.cfg)
         c.replay = seq
-        r = evaluate(c, policy, seeds=range(months))
-        out[name] = {"months": months, "profit": r["profit"], "stockout_days": r["stockout_days"], "sat": r["sat"]}
+        r = evaluate(c, policy, seeds=range(n))
+        out[name] = {"months": n, "profit": r["profit"], "stockout_days": r["stockout_days"], "sat": r["sat"]}
     ps = [v["profit"] for v in out.values()]
     out["profit"] = sum(ps) / len(ps)
     return out
