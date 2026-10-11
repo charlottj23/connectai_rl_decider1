@@ -109,7 +109,7 @@ def sft(data_dir, out, model=BASE_MODEL, epochs=1.0, lr=1e-4, batch=8, rank=8, s
     return sc
 
 
-def rl(data_dir, start, out, model=BASE_MODEL, steps=150, batch=8, lr=2e-5, beta=0.05, eval_every=50, seed=0, max_rows=None, log=print):
+def rl(data_dir, start, out, model=BASE_MODEL, steps=100, batch=8, lr=5e-6, beta=0.2, eval_every=50, seed=0, max_rows=1500, log=print):
     """③ 강화학습 · train_mlx.rl과 같은 손실: −Σ p · 장점 + β · KL(p ‖ 출발 모델). start는 지도학습 어댑터 폴더."""
     import torch
     from peft import PeftModel

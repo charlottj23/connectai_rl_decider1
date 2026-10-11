@@ -194,9 +194,9 @@ def cmd_llm(args):
         return
     M = _llm_backend(args.backend)
     if args.step == "sft":
-        M.sft(args.data, args.out, epochs=args.epochs, lr=args.lr)
+        M.sft(args.data, args.out, epochs=args.epochs, lr=args.lr or 1e-4)
     elif args.step == "rl":
-        M.rl(args.data, args.start, args.out, steps=args.steps, batch=args.batch, lr=args.lr, beta=args.beta, max_rows=args.max_rows)
+        M.rl(args.data, args.start, args.out, steps=args.steps, batch=args.batch, lr=args.lr or 5e-6, beta=args.beta, max_rows=args.max_rows)
     elif args.step == "eval":
         from .llm.policy import LLMPolicy, report
         co = ct.make_company(profile=args.profile)
@@ -259,8 +259,8 @@ def main(argv=None):
     s.add_argument("--profile", default="general", help=PROFILE_HELP); s.add_argument("--train-months", type=int, default=10)
     s.add_argument("--stride", type=int, default=1); s.add_argument("--data", default="llm_data"); s.add_argument("--out", default="llm_out")
     s.add_argument("--from", dest="start", help="강화학습 출발 어댑터 (보통 sft 결과)"); s.add_argument("--adapter", action="append")
-    s.add_argument("--epochs", type=float, default=1.0); s.add_argument("--lr", type=float, default=1e-4)
-    s.add_argument("--steps", type=int, default=150); s.add_argument("--batch", type=int, default=8); s.add_argument("--beta", type=float, default=0.05); s.add_argument("--max-rows", type=int, default=1500)
+    s.add_argument("--epochs", type=float, default=1.0); s.add_argument("--lr", type=float, help="기본 sft 1e-4 · rl 5e-6")
+    s.add_argument("--steps", type=int, default=100); s.add_argument("--batch", type=int, default=8); s.add_argument("--beta", type=float, default=0.2); s.add_argument("--max-rows", type=int, default=1500)
     s.add_argument("--backend", default="auto", choices=["auto", "mlx", "torch"], help="mlx(Mac) · torch(Windows · Linux · NVIDIA GPU)")
     s.add_argument("--months", type=int, default=0, help="eval: 시뮬레이터에서 운영해 볼 달 수 (느림)"); s.add_argument("--save")
     s.add_argument("--results", help="push: eval --save로 저장한 성적"); s.add_argument("--repo")

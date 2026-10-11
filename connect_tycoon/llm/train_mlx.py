@@ -84,7 +84,7 @@ def sft(data_dir, out, model=BASE_MODEL, epochs=1.0, lr=1e-4, batch=8, micro=4, 
     return out
 
 
-def rl(data_dir, start, out, model=BASE_MODEL, steps=200, batch=8, lr=2e-5, beta=0.05, eval_every=50, seed=0, max_rows=None, log=print):
+def rl(data_dir, start, out, model=BASE_MODEL, steps=100, batch=8, lr=5e-6, beta=0.2, eval_every=50, seed=0, max_rows=1500, log=print):
     """③ 강화학습 · 선택지 전체를 한 묶음(group)으로 보고, 시뮬레이터 점수가 평균보다 높은 보기의 확률은 올리고 낮은 보기는 내립니다.
 
     손실 = −Σ p(보기) · 장점(보기)  +  β · KL(p ‖ 출발 모델)

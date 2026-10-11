@@ -81,7 +81,7 @@ base = T.Scorer()
 results = {"Qwen 학습 전": D.agreement(test, base.pick)}
 print(results)
 del base; torch.cuda.empty_cache()""", None),
-    ("md", """## 4 · 지도학습 · 점수가 가장 높은 보기를 따라 배우기 (T4 기준 10~20분)
+    ("md", """## 4 · 지도학습 · 점수가 가장 높은 보기를 따라 배우기 (T4 약 45분 · A100 약 10분)
 
 **무엇을** · 정답 보기 글자를 맞히도록 LoRA를 학습합니다 (모델 전체가 아니라 작은 덧붙임 층만).
 **왜** · 강화학습만으로는 출발점(30%)이 너무 낮아 배우기 어렵습니다. 먼저 따라 배워 기본기를 만듭니다.
@@ -91,14 +91,14 @@ del base; torch.cuda.empty_cache()""", None),
 results["지도학습"] = D.agreement(test, sft.pick)
 print(results["지도학습"])
 del sft; torch.cuda.empty_cache()""", None),
-    ("md", """## 5 · 강화학습 · 시뮬레이터 점수로 고치기 (T4 기준 5~10분)
+    ("md", """## 5 · 강화학습 · 시뮬레이터 점수로 고치기 (T4 약 30분)
 
 **무엇을** · 보기 전체를 한 묶음으로 보고, 시뮬레이터 점수가 평균보다 높은 보기의 확률은 올리고 낮은 보기는 내립니다. 지도학습 모델에서 너무 멀어지지 않게 붙잡아 둡니다(KL).
-**왜** · 따라 하기는 선생님을 넘을 수 없습니다. 결과로 배워야 더 나아집니다.
+**왜** · 따라 하기는 선생님을 넘을 수 없습니다. 결과로 배워야 더 나아집니다. 학습률을 작게, 지도학습 모델에 붙잡는 힘(β)을 크게 둡니다. 너무 세게 고치면 오히려 나빠집니다.
 **손실** · −Σ p(보기) · 장점(보기) + β · KL(p ‖ 지도학습 모델). 강화학습은 점수가 또렷한 낮의 일에만 씁니다.
 
 ✅ **정상이면** · 정답률은 비슷하고 **후회**(고른 답이 최고점에서 모자란 정도)가 지도학습보다 작아집니다"""),
-    ("code", """rlm, hist = T.rl("llm_data", "adapters/sft", "adapters/rl", steps=150, batch=8, lr=2e-5, beta=0.05)
+    ("code", """rlm, hist = T.rl("llm_data", "adapters/sft", "adapters/rl", steps=100, batch=8, lr=5e-6, beta=0.2, max_rows=1500)   # Mac 실험에서 검증한 값
 results["강화학습"] = D.agreement(test, rlm.pick)
 for k, v in results.items(): print(f"{k:10s} 정답률 {v['accuracy']:.1%} · 후회 {v['regret']:.2f}")""", None),
     ("md", """## 6 · Qwen을 회사 사장 자리에 앉히기 · 시뮬레이터 + 실제 데이터 시험 (3~5분)
