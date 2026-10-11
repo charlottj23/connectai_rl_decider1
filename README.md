@@ -1,0 +1,128 @@
+# CONNECT TYCOON
+
+**시뮬레이터로 기업 의사결정 모델을 학습시킵니다.**
+
+![모델이 회사를 운영하는 하루](docs/images/hero.gif)
+
+모델은 빌딩 맨 위층에서 회사를 운영합니다. 판단 하나가 빛줄기가 되어 층으로 내려가고, 그 결과가 돈 · 고객 만족 · 사고로 돌아옵니다.
+학습 버튼을 누르면 모델이 시뮬레이터에서 수백 번 회사를 운영하며 스스로 배우고, 확신이 없을 때는 사람에게 묻습니다.
+
+[CONNECT AI LAB](https://github.com/wonseokjung/EZERAI) · 오픈소스 · Apache-2.0
+
+---
+
+## 학습은 이렇게 됩니다
+
+| | |
+|---|---|
+| ![학습](docs/images/training.png) | **① 강화학습 · 시뮬레이터에서 스스로**<br>모델이 한 달을 수백 번 운영합니다. 보상이 커진 판단을 더 자주 하도록 고칩니다 (PPO). |
+| ![사람 확인](docs/images/review-refund.png) | **② 사람 확인 · 확신이 낮을 때만**<br>모델이 확신하지 못한 판단은 게임을 멈추고 사람에게 묻습니다. 사람이 고른 답은 라벨이 되어 지도학습으로 들어갑니다. |
+| ![답 확인](docs/images/feedback.png) | **③ 바로 채점**<br>시뮬레이터가 선택지마다 한 달을 끝까지 다시 돌려, 내 답이 좋았는지 바로 알려 줍니다. |
+| ![버전](docs/images/studio.png) | **④ 버전**<br>학습할 때마다 v1, v2… 새 모델이 회사를 맡고, 버전별 한 달 이익이 쌓입니다. |
+
+## 시작
+
+```bash
+git clone https://github.com/wonseokjung/connect-tycoon
+cd connect-tycoon
+pip install -e ".[game]"
+connect-tycoon play
+```
+
+| 조작 | |
+|---|---|
+| 학습 → v1 | 지금 모델에서 이어서 학습 (강화학습 + 사람 라벨) |
+| 보상 막대 | 이익 · 고객 만족 · 위험 회피, 무엇이 중요한지 |
+| 사람 라벨 · 묻기/끄기 | 확신이 낮은 판단을 사람에게 물을지 |
+| brain.json | 학습한 모델을 내려받기 (`~/Downloads`) |
+| 스페이스 · Esc | 일시정지 · 타이틀 |
+
+## 보상은 결과에 줍니다
+
+```
+보상 = 이익 × 번 돈 + 고객 만족 × 만족 변화 − 위험 회피 × 사고
+```
+
+행동에 점수를 매기지 않습니다. 시뮬레이터가 행동의 결과를 계산하고, 사람은 무엇이 중요한지(세 가중치)만 정합니다.
+그 사이의 판단 규칙은 강화학습이 찾습니다.
+
+## 공개 데이터로 맞춘 회사 · 실제 데이터로 시험
+
+시뮬레이터의 숫자는 지어낸 값이 아니라 여러 업종의 공개 데이터에서 가져옵니다.
+업종과 상관없이 나타나는 **모양**(요일 패턴 · 하루 수요 흔들림 · 취소 금액 분포 · 사기 비율과 점수 · 서비스 실패 뒤 만족 하락)만 쓰고,
+크기(손님 수 · 가격)는 회사마다 다르므로 기본 규모에 맞춥니다.
+
+| 데이터 | 업종 | 쓰는 곳 |
+|---|---|---|
+| UCI Online Retail II | 소매 | 요일 수요 · 하루 흔들림 · 취소 요일 · 환불 금액 · 고객 등급 |
+| Hotel Booking Demand | 숙박 | 요일 수요 · 하루 흔들림 · 취소 요일 · 고객 등급 |
+| UCI Bike Sharing | 대여 서비스 | 요일 수요 · 하루 흔들림 |
+| ULB Credit Card Fraud | 금융 | 사기 비율 · 사기 점수 · 결제 금액 |
+| Olist | 배송 마켓 | 서비스 실패 뒤 만족 하락 |
+| Bitext Customer Support | 고객센터 | 문의 유형 → 팀 |
+
+그리고 학습이 끝날 때마다 **학습에 쓰지 않은 실제 기록**으로 다시 채점합니다.
+
+| 처음 보는 실제 카드 거래 713건 (사기 177건) | 손실 줄임 | 잡은 사기 | 실제 수요 재생 · 한 달 이익 |
+|---|---|---|---|
+| 규칙 | 68% | 138 | 305만 |
+| 강의 회사에서 배운 모델 그대로 | 74% | 145 | 1,059만 |
+| 일반 회사에서 이어서 학습 | **90%** | **161** | **1,243만** |
+
+```bash
+connect-tycoon backtest --brain my-model.json        # 실제 데이터 시험
+connect-tycoon train --profile general               # 일반 회사(기본) · lecture는 강의 엔진
+python scripts/calibrate.py --data ~/connect-data    # 공개 데이터로 프로필 다시 만들기 (pip install -e ".[data]")
+```
+
+순서는 **일반 회사 → 우리 회사**입니다. 한 회사의 실제 기록(주문 · 환불 · 문의 · 결제)을 같은 방법으로 넣으면 그 회사의 프로필이 되고,
+일반 모델에서 이어서 학습해 그 회사 전용 의사결정 모델이 됩니다. 실제 데이터에 없는 값(악용 비율 · 기기 신호 · 비용)은 가정이며 프로필의 `assumed`에 적혀 있습니다.
+
+## 모델이 답하는 모양 · JEV
+
+회사의 판단 하나는 JEV 요청 하나입니다. 상황(`state`)과 선택지(`criteria`)를 받아 `choice` · `probabilities` · `confidence`로 답합니다.
+OpenRouter의 `typesafe/jev-1.13`과 같은 모양이라, JEV를 말하는 모델이면 무엇이든 이 시뮬레이터에서 학습하고 시험할 수 있습니다. → [docs/JEV.md](docs/JEV.md)
+
+## 언어 모델에 옮기기
+
+강화학습으로 배운 판단을 C1 · JEV 같은 언어 모델에 옮기는 데이터도 만듭니다.
+판단마다 선택지를 모두 끝까지 다시 돌려 본 결과가 정답 라벨이 됩니다.
+
+```bash
+connect-tycoon jev --brain my-model.json --months 10 --out jev.jsonl
+```
+
+```python
+from connect_tycoon import labels
+rows = labels.counterfactual(company, policy, seed=7000)
+labels.export(rows, company, sft_path="sft.jsonl", pairs_path="dpo.jsonl")
+```
+
+## 개발자용
+
+```python
+import gymnasium as gym, connect_tycoon
+env = gym.make("ConnectTycoon-v0")            # 한 달 = 에피소드, 판단 하나 = 스텝, action_mask 포함
+```
+
+```bash
+connect-tycoon train --name my-model --profit 2      # 터미널에서 학습
+connect-tycoon push --brain my-model.json            # Hugging Face (HF_TOKEN)
+connect-tycoon record --brain my-model.json --mp4    # 모델이 운영하는 하루를 영상으로
+```
+
+Colab: [`notebooks/connect_tycoon_colab.ipynb`](notebooks/connect_tycoon_colab.ipynb) · 설계: [docs/DESIGN.md](docs/DESIGN.md)
+
+## 다음
+
+- 우리 회사 데이터 넣기 · CSV를 넣으면 프로필과 실제 데이터 시험이 그 회사 기준으로
+- 질문 만들기 · 사람이 질문 · 행동 · 결과표를 직접 정해 자기 회사의 의사결정을 추가
+- 산업별 시뮬레이터 · 쇼핑몰 다음으로 병원 · 물류 · 금융 같은 업종마다 하나씩
+- 각자 키운 모델을 Hugging Face에 올리고 한곳에 모으기 (Connect AI)
+
+## 라이선스
+
+코드 · 그림 · 소리는 [Apache-2.0](LICENSE). 글꼴은 [프리텐다드](https://github.com/orioncactus/pretendard)와 [갈무리](https://github.com/quiple/galmuri) (SIL OFL 1.1).
+공개 데이터의 출처와 라이선스(CC BY 4.0 · DbCL · CDLA-Sharing · Olist는 CC BY-NC-SA로 요약 통계 세 개만 사용)는 [NOTICE](NOTICE)에 있습니다.
+
+합성 시뮬레이터 위의 교육용 모형입니다. 실제 경영 성과를 보장하지 않습니다.

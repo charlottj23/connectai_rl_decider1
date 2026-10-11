@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "connect-tycoon"
+version = "0.1.0"
+description = "AI 사장 키우기 · JEV 의사결정 두뇌를 강화학습으로 키우는 기업 경영 시뮬레이터 (게임 + Gymnasium 환경)"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [{name = "CONNECT AI LAB"}]
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22"]
+keywords = ["reinforcement-learning", "jev", "decision-making", "tycoon", "simulation", "gymnasium", "pygame", "ppo"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Games/Entertainment :: Simulation",
+  "Natural Language :: Korean",
+]
+
+[project.optional-dependencies]
+game = ["pygame-ce>=2.4"]
+gym = ["gymnasium>=0.29"]
+hub = ["huggingface_hub>=0.20"]
+data = ["pandas>=2", "openpyxl>=3", "pyarrow>=14", "scikit-learn>=1.3"]   # scripts/calibrate.py (공개 데이터로 프로필 만들기)
+dev = ["pytest>=7", "pygame-ce>=2.4", "gymnasium>=0.29"]
+all = ["pygame-ce>=2.4", "gymnasium>=0.29", "huggingface_hub>=0.20"]
+
+[project.scripts]
+connect-tycoon = "connect_tycoon.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/wonseokjung/connect-tycoon"
+
+[tool.setuptools.packages.find]
+include = ["connect_tycoon*"]
+
+[tool.setuptools.package-data]
+connect_tycoon = ["data/*.json", "data/profiles/*.json", "data/real/*.json", "game/assets/fonts/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

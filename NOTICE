@@ -1,0 +1,41 @@
+CONNECT TYCOON (AI 사장 키우기)
+Copyright 2026 CONNECT AI LAB
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+All pixel art, characters, animations, sound effects and music in this project are original works
+generated from source code in connect_tycoon/game/ (art.py, audio.py) and are covered by the same license.
+
+Third-party material
+--------------------
+Galmuri (갈무리) pixel fonts — Copyright 2019–2025 Lee Minseo (quiple@quiple.dev)
+  https://github.com/quiple/galmuri
+  Licensed under the SIL Open Font License 1.1 (connect_tycoon/game/assets/fonts/OFL.md).
+  The bundled files Galmuri11.ttf, Galmuri11-Bold.ttf and GalmuriMono11.ttf are subsets
+  (Latin, Hangul, common symbols) of version 2.40.3 made with fontTools.
+
+Pretendard (프리텐다드) — Copyright 2021 Kil Hyung-jin, with Reserved Font Name 'Pretendard'
+  https://github.com/orioncactus/pretendard
+  Licensed under the SIL Open Font License 1.1 (connect_tycoon/game/assets/fonts/Pretendard-OFL.txt).
+  Pretendard-SemiBold.otf and Pretendard-ExtraBold.otf are bundled UNMODIFIED (version 1.3.9).
+  Used for all on-screen text when the window is large enough; Galmuri is the fallback for small screens.
+
+Customer messages in connect_tycoon/data/pool.json are synthetic examples written for CONNECT AI LAB.
+The example brain connect_tycoon/data/jay-company.json was trained by CONNECT AI LAB on this simulator.
+
+Public datasets (connect_tycoon/data/profiles/general.json, connect_tycoon/data/real/)
+------------------------------------------------------------------------------------
+The "general" company profile contains summary statistics (weekday shares, quantile tables, rates)
+computed by scripts/calibrate.py. No raw records are redistributed except where noted.
+  · Online Retail II — Chen, D. (2019), UCI Machine Learning Repository, CC BY 4.0. https://doi.org/10.24432/C5CG6D
+  · Hotel Booking Demand — Antonio, N., Almeida, A. & Nunes, L. (2019), Data in Brief 22, CC BY 4.0
+    (via rfordatascience/tidytuesday 2020-02-11).
+  · Bike Sharing — Fanaee-T, H. (2013), UCI Machine Learning Repository, CC BY 4.0. https://doi.org/10.24432/C5W894
+  · Credit Card Fraud Detection — Machine Learning Group, ULB (Dal Pozzolo et al. 2015), Database Contents License v1.0
+    (OpenML dataset 1597). data/real/card_queue.json holds 713 derived rows (model score, rescaled amount, fraud label)
+    from the held-out half of this dataset.
+  · Brazilian E-Commerce Public Dataset by Olist — CC BY-NC-SA 4.0. Only three aggregate review-score shares
+    (on-time / late / failed orders) are used; these determine sat_base and stockout_dsat.
+  · Bitext Customer Support LLM Chatbot Training Dataset — CDLA-Sharing-1.0. Only intent counts are used.
+data/real/demand_days.json holds normalized daily demand ratios derived from Online Retail II, Hotel Booking Demand
+and Bike Sharing (CC BY 4.0).

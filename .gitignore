@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+frames/
+*.mp4
+*.jsonl
+!examples/*.jsonl
+.DS_Store
+.ruff_cache/
+docs/youtube/notice/
