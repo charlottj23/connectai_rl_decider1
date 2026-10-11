@@ -7,7 +7,7 @@
 모델은 빌딩 맨 위층에서 회사를 운영합니다. 판단 하나가 빛줄기가 되어 층으로 내려가고, 그 결과가 돈 · 고객 만족 · 사고로 돌아옵니다.
 학습 버튼을 누르면 모델이 시뮬레이터에서 수백 번 회사를 운영하며 스스로 배우고, 확신이 없을 때는 사람에게 묻습니다.
 
-만든 곳 **Jay · [Connect AI LAB](https://www.youtube.com/channel/UCdLZ0MsYS4hmqFgOYCB6C9w)** · 배우는 곳 **[AI City Builders](https://www.aicitybuilders.com)** · 오픈소스 · Apache-2.0
+AI 교육 브랜드 **[CONNECT AI LAB](https://www.youtube.com/@CONNECT-AI-LAB) × [AI CITY BUILDERS](https://www.aicitybuilders.com)**의 강화학습 수업에서 만든 오픈소스 · Apache-2.0
 
 ---
 
@@ -120,16 +120,25 @@ Colab: [`notebooks/connect_tycoon_colab.ipynb`](notebooks/connect_tycoon_colab.i
 - 산업별 시뮬레이터 · 쇼핑몰 다음으로 병원 · 물류 · 금융 같은 업종마다 하나씩
 - 각자 키운 모델을 Hugging Face에 올리고 한곳에 모으기 (Connect AI)
 
-## Jay와 함께 AI 만들기
+## 만든 곳 · CONNECT AI LAB × AI CITY BUILDERS
 
-AI를 쓰는 사람에서 **직접 만드는 사람**으로. 이 시뮬레이터도 그 과정을 그대로 공개하며 만들었습니다.
+**Transforming Lives Through AI Education.** AI를 쓰는 사람에서, AI로 직접 만들고 일하는 사람으로.
+AI 멘토 제이(정원석)가 만드는 과정을 그대로 공개하고, 그 과정을 기초부터 따라 할 수 있는 교육으로 만듭니다.
 
-- **만드는 과정 보기 · [Connect AI LAB 유튜브](https://www.youtube.com/channel/UCdLZ0MsYS4hmqFgOYCB6C9w)**: 로컬 AI부터 나만의 모델까지, 도구와 모델을 만드는 실험을 영상으로 공유합니다.
-- **연구 자료 · [Connect AI LAB](https://www.aicitybuilders.com/lab)**: 서로 연결되는 모델 실험과 연구 자료 (멤버 공개).
-- **배우고 만들기 · [AI City Builders](https://www.aicitybuilders.com)**: AI로 혼자서도 사업을 만드는 사람들을 위한 Jay의 교육과 커뮤니티.
+| | |
+|---|---|
+| **[CONNECT AI LAB · 유튜브](https://www.youtube.com/@CONNECT-AI-LAB)** | 구독자 12만+ · 영상 300편+ 무료 강의. AI 1인 기업, 로컬 AI, 강화학습, 피지컬 AI, JEV까지 직접 해 보며 배웁니다. |
+| **[AI CITY BUILDERS](https://www.aicitybuilders.com)** | AI BUSINESS UNIVERSITY · **AI 비즈니스의 정석.** AI 1인 기업부터 기존 기업의 AI 전환까지, 이북 → 영상 실습 → 비즈니스 적용 순서로 배웁니다. |
+| **[Connect AI](https://www.ezerai.xyz)** | 독립된 두뇌, 연결되는 지능. 기업 의사결정을 위한 우리 모델 [C1](https://huggingface.co/WonseokJayJung/Connect-C1-0.8B-v0.1)을 멤버들과 함께 연구합니다. |
 
-이 저장소로 학습시킨 의사결정 모델을 각자 Hugging Face에 올리고, 한곳에 연결해 논문으로 쓰는 과정까지 함께합니다.
-같은 철학의 첫 모델: [C1](https://huggingface.co/WonseokJayJung/Connect-C1-0.8B-v0.1) · 데스크톱 앱: [Connect AI](https://github.com/wonseokjung/connect-ai)
+**이 저장소와 이어지는 수업**
+
+- [강화학습 AI 과정](https://www.aicitybuilders.com/robot): 로봇부터 JEV까지. 상태 · 행동 · 보상으로 문제를 바꾸고, DQN · PPO로 두뇌를 학습시키고, 마지막 강 「강화학습 × JEV」에서 1인 기업 자동화에 적용합니다.
+- [무료 강화학습 실험실](https://www.aicitybuilders.com/explore): 탐험하지 않으면 9점, 탐험하면 178점. 브라우저에서 바로 눌러 보는 강의 속 실험.
+- 유튜브 재생목록 [AI 강화학습을 알면 인생이 보입니다](https://www.youtube.com/playlist?list=PLSDuOiEMMABU) · JEV 영상 [이론부터 무료 실습까지](https://www.youtube.com/watch?v=p4Mn6KFsSeM) · [내 PC에서 JEV 같은 AI 돌리기](https://www.youtube.com/watch?v=u5EL3dNwJpw)
+- 어디서 시작할지 모르겠다면: [무료 AI 학습 길찾기](https://www.aicitybuilders.com/ask)
+
+여기서 학습시킨 의사결정 모델을 각자 Hugging Face에 올리고, 한곳에 연결해 함께 논문으로 씁니다 (CONNECT AI LAB 대표 멤버십 공동 연구).
 
 ## 라이선스
 
