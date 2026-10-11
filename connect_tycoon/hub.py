@@ -59,5 +59,11 @@ pip install "connect-tycoon[game]"
 connect-tycoon play --brain hf:{repo}
 ```
 
+## Jay와 함께 AI 만들기
+
+- [Connect AI LAB 유튜브](https://www.youtube.com/channel/UCdLZ0MsYS4hmqFgOYCB6C9w) · 도구와 모델을 만드는 과정
+- [Connect AI LAB](https://www.aicitybuilders.com/lab) · 연결되는 모델 연구 (멤버 공개)
+- [AI City Builders](https://www.aicitybuilders.com) · AI로 혼자서도 사업을 만드는 교육과 커뮤니티
+
 합성 회사 시뮬레이터 위의 교육용 모형입니다. 실제 경영 성과를 보장하거나 예측하지 않습니다.
 """

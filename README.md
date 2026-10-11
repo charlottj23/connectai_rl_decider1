@@ -7,7 +7,7 @@
 모델은 빌딩 맨 위층에서 회사를 운영합니다. 판단 하나가 빛줄기가 되어 층으로 내려가고, 그 결과가 돈 · 고객 만족 · 사고로 돌아옵니다.
 학습 버튼을 누르면 모델이 시뮬레이터에서 수백 번 회사를 운영하며 스스로 배우고, 확신이 없을 때는 사람에게 묻습니다.
 
-[CONNECT AI LAB](https://github.com/wonseokjung/EZERAI) · 오픈소스 · Apache-2.0
+만든 곳 **Jay · [Connect AI LAB](https://www.youtube.com/channel/UCdLZ0MsYS4hmqFgOYCB6C9w)** · 배우는 곳 **[AI City Builders](https://www.aicitybuilders.com)** · 오픈소스 · Apache-2.0
 
 ---
 
@@ -119,6 +119,17 @@ Colab: [`notebooks/connect_tycoon_colab.ipynb`](notebooks/connect_tycoon_colab.i
 - 질문 만들기 · 사람이 질문 · 행동 · 결과표를 직접 정해 자기 회사의 의사결정을 추가
 - 산업별 시뮬레이터 · 쇼핑몰 다음으로 병원 · 물류 · 금융 같은 업종마다 하나씩
 - 각자 키운 모델을 Hugging Face에 올리고 한곳에 모으기 (Connect AI)
+
+## Jay와 함께 AI 만들기
+
+AI를 쓰는 사람에서 **직접 만드는 사람**으로. 이 시뮬레이터도 그 과정을 그대로 공개하며 만들었습니다.
+
+- **만드는 과정 보기 · [Connect AI LAB 유튜브](https://www.youtube.com/channel/UCdLZ0MsYS4hmqFgOYCB6C9w)**: 로컬 AI부터 나만의 모델까지, 도구와 모델을 만드는 실험을 영상으로 공유합니다.
+- **연구 자료 · [Connect AI LAB](https://www.aicitybuilders.com/lab)**: 서로 연결되는 모델 실험과 연구 자료 (멤버 공개).
+- **배우고 만들기 · [AI City Builders](https://www.aicitybuilders.com)**: AI로 혼자서도 사업을 만드는 사람들을 위한 Jay의 교육과 커뮤니티.
+
+이 저장소로 학습시킨 의사결정 모델을 각자 Hugging Face에 올리고, 한곳에 연결해 논문으로 쓰는 과정까지 함께합니다.
+같은 철학의 첫 모델: [C1](https://huggingface.co/WonseokJayJung/Connect-C1-0.8B-v0.1) · 데스크톱 앱: [Connect AI](https://github.com/wonseokjung/connect-ai)
 
 ## 라이선스
 
