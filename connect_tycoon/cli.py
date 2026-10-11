@@ -163,7 +163,18 @@ def cmd_push(args):
     print(f"https://huggingface.co/{repo}")
 
 
+def _utf8_console():
+    """윈도우 콘솔(cp1252 등)에서도 한글이 깨지거나 멈추지 않도록 출력을 UTF-8로 바꿉니다."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if (stream.encoding or "").lower().replace("-", "") != "utf8":
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv=None):
+    _utf8_console()
     p = argparse.ArgumentParser(prog="connect-tycoon", description="AI 사장 키우기 · JEV 의사결정 두뇌를 강화학습으로 키우는 기업 경영 시뮬레이터")
     sub = p.add_subparsers(dest="cmd")
     s = sub.add_parser("play", help="게임"); s.add_argument("--brain", action="append", help="두뇌 추가 (경로 또는 hf:아이디/저장소)")
