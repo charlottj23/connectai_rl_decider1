@@ -99,3 +99,17 @@ def test_collect_scoring_and_connection():
     board = C.leaderboard({"a": {"probs": a, **ma}, "b": {"probs": b, **mb}}, rows)
     assert [x["type"] for x in board].count("ensemble") == 3 and board[0]["type"] == "ensemble" and board[0]["accuracy"] == 1.0   # 연결이 하나보다 낫다
     assert "| 1 |" in C.table(board)
+
+
+def test_notebook_cells_are_valid_python():
+    """Colab 셀이 문법 오류 없이 실행되도록 (! 명령 · % 매직 줄은 빼고 확인)."""
+    import ast
+    import glob
+    import json
+    import os
+    for path in glob.glob(os.path.join(os.path.dirname(__file__), "..", "notebooks", "*.ipynb")):
+        for cell in json.load(open(path, encoding="utf-8"))["cells"]:
+            if cell["cell_type"] != "code":
+                continue
+            src = "".join(cell["source"])
+            ast.parse("\n".join("pass" if line.lstrip().startswith(("!", "%")) else line for line in src.splitlines()))

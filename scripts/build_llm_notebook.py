@@ -140,8 +140,8 @@ PRIVATE = False                                      #@param {type:"boolean"}
 MODEL_NAME = repo_name(NAME, VERSION)                # connectailab-rl-이름-버전
 
 # 나를 알리는 글 · 형식 없이 자유롭게 (모델 카드 맨 위 '만든 사람'에 그대로 들어갑니다)
-ABOUT_ME = """
-"""
+ABOUT_ME = '''
+'''
 author = make_author(ABOUT_ME)
 open("about_me.md", "w").write(ABOUT_ME)
 
