@@ -112,4 +112,5 @@ def test_notebook_cells_are_valid_python():
             if cell["cell_type"] != "code":
                 continue
             src = "".join(cell["source"])
-            ast.parse("\n".join("pass" if line.lstrip().startswith(("!", "%")) else line for line in src.splitlines()))
+            ast.parse("\n".join(line[:len(line) - len(line.lstrip())] + "pass" if line.lstrip().startswith(("!", "%")) else line
+                                 for line in src.splitlines()))
