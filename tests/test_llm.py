@@ -72,3 +72,31 @@ def test_upload_name_rule():
     assert repo_name("Jay", "v1") == "connectailab-jay-v1"
     assert repo_name("Min Ji", "V2") == "connectailab-min-ji-v2"
     assert repo_name("team3", "v1", "teacher") == "connectailab-team3-v1-teacher"
+
+
+def test_author_intro_in_card():
+    from connect_tycoon.llm.hub import card, make_author
+    a = make_author("제이", "AI 1인 기업을 만들고 가르칩니다", youtube="@CONNECT-AI-LAB", instagram="@aimentorjay",
+                    website="aicitybuilders.com", linkedin="not a link")
+    assert a["links"] == {"youtube": "https://www.youtube.com/@CONNECT-AI-LAB", "instagram": "https://www.instagram.com/aimentorjay",
+                          "website": "https://aicitybuilders.com"}
+    c = card("me/connectailab-jay-v1", author=a)
+    assert c.index("## 만든 사람 · 제이") < c.index("# RL AI COMPANY DECISION MAKING MODEL")
+    assert "aicitybuilders.com" in c and "connectailab" in c.split("---")[1]
+    assert make_author("", "", youtube="") is None and "## 만든 사람" not in card("me/x")
+
+
+def test_collect_scoring_and_connection():
+    from connect_tycoon.llm import collect as C
+    assert C.kind_of(["adapter/adapters.safetensors"]) == "mlx" and C.kind_of(["adapter_model.safetensors"]) == "peft"
+    assert C.kind_of(["brain.json"]) == "brain" and C.kind_of(["README.md"]) == "other"
+    rows = [{"scores": [1.0, 0.0, 0.5]}, {"scores": [0.0, 2.0, 1.0]}]
+    a = [[0.8, 0.1, 0.1], [0.6, 0.3, 0.1]]           # 1번 맞음 · 2번 틀림
+    b = [[0.2, 0.3, 0.5], [0.1, 0.8, 0.1]]           # 1번 틀림 · 2번 맞음
+    ma, mb = C.metrics(a, rows), C.metrics(b, rows)
+    assert ma["accuracy"] == 0.5 and mb["accuracy"] == 0.5 and abs(ma["regret"] - 1.0) < 1e-9
+    assert C.metrics(C.ensemble([a, b], "confident"), rows)["accuracy"] == 1.0    # 문제마다 더 확신하는 쪽
+    assert len(C.ensemble([a, b], "mean")) == 2 and len(C.ensemble([a, b], "vote")[0]) == 3
+    board = C.leaderboard({"a": {"probs": a, **ma}, "b": {"probs": b, **mb}}, rows)
+    assert [x["type"] for x in board].count("ensemble") == 3 and board[0]["type"] == "ensemble" and board[0]["accuracy"] == 1.0   # 연결이 하나보다 낫다
+    assert "| 1 |" in C.table(board)

@@ -118,12 +118,13 @@ print("선생님(작은 정책)", round(ct.evaluate(company, teacher, seeds=rang
 2. Colab 왼쪽 🔑(보안 비밀)에 이름 `HF_TOKEN`, 값에 토큰을 넣고 **노트북 액세스**를 켭니다.
 3. **이름**을 영문으로 적습니다. 업로드 이름은 `connectailab-이름-버전` 입니다 (예: `connectailab-jay-v1`).
    다시 학습해서 올릴 때는 버전을 `v2`, `v3`…으로 올립니다.
-4. 아래 셀을 실행하면 내 계정에 모델이 올라갑니다. 모델 카드(성적표 · 만든 방법 · 쓰는 법)와 **Reinforcement Learning** 분류가 함께 붙습니다.
+4. **자기소개**를 적습니다. 이름 · 한 줄 소개 · 링크(유튜브 · 인스타 · 웹사이트 · 링크드인)가 모델 카드 맨 위 '만든 사람'에 들어갑니다. 비워 두면 빠집니다.
+5. 아래 셀을 실행하면 내 계정에 모델이 올라갑니다. 모델 카드(성적표 · 만든 방법 · 쓰는 법)와 **Reinforcement Learning** 분류가 함께 붙습니다.
 
 토큰은 코드에 적지 않습니다."""),
     ("code", """from google.colab import userdata
 from huggingface_hub import HfApi
-from connect_tycoon.llm.hub import push, repo_name
+from connect_tycoon.llm.hub import make_author, push, repo_name
 import json, os
 
 try:
@@ -137,8 +138,18 @@ NAME = "jay"                                         #@param {type:"string"}
 VERSION = "v1"                                       #@param {type:"string"}
 PRIVATE = False                                      #@param {type:"boolean"}
 MODEL_NAME = repo_name(NAME, VERSION)                # connectailab-이름-버전
+
+# 자기소개 · 모델 카드 맨 위 '만든 사람'
+AUTHOR = "제이 · CONNECT AI LAB"                      #@param {type:"string"}
+INTRO = "AI 1인 기업을 만들고 가르칩니다"              #@param {type:"string"}
+YOUTUBE = ""                                         #@param {type:"string"}
+INSTAGRAM = ""                                       #@param {type:"string"}
+WEBSITE = ""                                         #@param {type:"string"}
+LINKEDIN = ""                                        #@param {type:"string"}
+author = make_author(AUTHOR, INTRO, youtube=YOUTUBE, instagram=INSTAGRAM, website=WEBSITE, linkedin=LINKEDIN)
+
 meta = json.load(open("llm_data/meta.json"))
-url = push("adapters/rl", repo=f"{me}/{MODEL_NAME}", results=results, meta=meta, backend="torch", token=HF_TOKEN, private=PRIVATE)
+url = push("adapters/rl", repo=f"{me}/{MODEL_NAME}", results=results, meta=meta, backend="torch", token=HF_TOKEN, private=PRIVATE, author=author)
 print("올라갔습니다 ·", url)""", None),
     ("md", """### (선택) 선생님 정책도 올리기
 
@@ -149,7 +160,31 @@ spec = ct.CompanyBrain.make_spec(ct.CompanyBrain.default().spec, teacher, name=T
                                  results={"test_profit": ct.evaluate(company, teacher)["profit"]})
 ct.CompanyBrain(spec).save("teacher.json")
 os.environ["HF_TOKEN"] = HF_TOKEN
-!connect-tycoon push --brain teacher.json --repo {me}/{TEACHER_NAME}""", None),
+!connect-tycoon push --brain teacher.json --repo {me}/{TEACHER_NAME} --author "{AUTHOR}" --intro "{INTRO}" --link youtube={YOUTUBE} --link instagram={INSTAGRAM} --link website={WEBSITE} --link linkedin={LINKEDIN}""", None),
+    ("md", """## 8 · 모두의 모델 모으기 · 연결해 보기
+
+Hugging Face에서 이름이 `connectailab-`으로 시작하는 모델을 모두 찾아, **같은 공통 시험지**로 채점합니다.
+그리고 모델들을 연결했을 때(확률 평균 · 다수결 · 가장 확신하는 모델에게 맡기기) 하나보다 나은지 봅니다. 공동 논문의 '연결 연구' 출발점입니다.
+
+- **공통 시험지** · 누구의 선생님에도 치우치지 않도록, 규칙 사장이 운영하는 아무도 학습에 쓰지 않은 달의 낮 판단(문의 · 환불 · 결제)
+- **확신 − 정답률** · 0에 가까울수록 정직한 확신입니다. +면 자신감 과잉, −면 지나치게 조심스럽습니다
+
+✅ **정상이면** · 모델마다 2~3분 (T4 · 300문제). 모델이 2개 이상이면 연결 결과 세 줄이 순위표에 함께 나옵니다."""),
+    ("code", """from connect_tycoon.llm import collect as C
+from IPython.display import Markdown, display
+
+PREFIX = "connectailab-"                             #@param {type:"string"}
+QUESTIONS = 300                                      #@param {type:"integer"}
+INCLUDE_MINE = True                                  #@param {type:"boolean"}
+
+models = C.find(prefix=PREFIX)
+if INCLUDE_MINE: models.append(C.local("adapters/rl", "내 모델 (이 노트북)"))
+print("찾은 모델", len(models), "개"); [print(" ·", m["repo"], m["kind"]) for m in models]
+test = C.common_test("collect/test")
+res = C.score(models, test, out_dir="collect", max_rows=QUESTIONS)
+board = C.leaderboard(res, test)
+display(Markdown(C.table(board)))
+C.save(board, "collect")""", None),
     ("md", """## (선택) 하나의 모델로 합치고 GGUF로 · Ollama · LM Studio
 
 LoRA를 바탕 모델에 합친 뒤 llama.cpp로 GGUF를 만듭니다."""),

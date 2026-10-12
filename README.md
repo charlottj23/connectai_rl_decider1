@@ -110,6 +110,13 @@ connect-tycoon llm eval --data llm_data --adapter adapters/sft --adapter adapter
 connect-tycoon llm push --adapter adapters/rl --data llm_data --results eval.json
 ```
 
+**자기소개 · 모두의 모델 모으기**
+
+```bash
+connect-tycoon llm push --adapter adapters/rl --name jay --version v1 --author "제이" --intro "AI 1인 기업을 만들고 가르칩니다" --link youtube=@CONNECT-AI-LAB --link website=aicitybuilders.com
+connect-tycoon llm collect        # connectailab-으로 시작하는 모델을 모두 찾아 같은 시험지로 채점 · 연결(평균 · 다수결 · 가장 확신) 비교
+```
+
 **Windows · Linux (NVIDIA GPU · PyTorch)** · 위 명령에 `--backend torch`를 붙입니다 (`pip install -e ".[llm]"`). Mac은 자동으로 MLX를 씁니다.
 
 **Colab (GPU · PyTorch)** · 시뮬레이터 → Qwen 지도학습 → 강화학습 → 내 Hugging Face 계정에 업로드까지 한 번에

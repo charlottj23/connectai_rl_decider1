@@ -56,7 +56,7 @@ def build(company, teacher, out_dir, splits=None, stride=1, sft_gap=0.2, log=pri
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
         counts[name] = len(rows)
     by = {}
-    for r in load(out_dir, "train"):
+    for r in (load(out_dir, "train") if "train" in splits else []):      # 공통 시험지처럼 test만 만들 때도 있습니다
         by[r["dept"]] = by.get(r["dept"], 0) + 1
     meta = {"counts": counts, "train_by_dept": by, "profile": company.profile_name, "values": company.values,
             "teacher": getattr(teacher, "name", type(teacher).__name__), "splits": {k: [v.start, v.stop] for k, v in splits.items()}}

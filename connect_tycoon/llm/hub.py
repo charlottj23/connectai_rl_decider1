@@ -26,12 +26,49 @@ def brand_header():
             f'<p align="center">{badges}</p>\n')
 
 
+LINK_LABEL = {"youtube": "YouTube", "instagram": "Instagram", "website": "웹사이트", "linkedin": "LinkedIn", "github": "GitHub", "blog": "블로그"}
+
+
+def make_author(name="", intro="", **links):
+    """자기소개 · 모델 카드 맨 위 '만든 사람'과 connectailab.json에 들어갑니다. 링크는 http로 시작하는 것만 씁니다."""
+    clean = lambda s: " ".join(str(s or "").split())[:600]
+    ok = {}
+    for k, v in links.items():
+        v = str(v or "").strip()
+        if not v:
+            continue
+        if v.startswith("@") and k in ("youtube", "instagram"):           # @아이디만 적어도 됩니다
+            v = {"youtube": "https://www.youtube.com/", "instagram": "https://www.instagram.com/"}[k] + (v if k == "youtube" else v[1:])
+        elif not v.startswith(("http://", "https://")) and "." in v and " " not in v:
+            v = "https://" + v                                            # aicitybuilders.com → https://aicitybuilders.com
+        if v.startswith(("http://", "https://")):
+            ok[k] = v
+    a = {"name": clean(name)[:80], "intro": clean(intro), "links": ok}
+    return a if a["name"] or a["intro"] or a["links"] else None
+
+
+def author_section(author):
+    """'만든 사람' 섹션 (마크다운). 이름 · 한 줄 소개 · 링크 배지."""
+    if not author:
+        return ""
+    links = " ".join(_badge(LINK_LABEL.get(k, k), "바로가기", {"youtube": "youtube", "instagram": "instagram", "linkedin": "linkedin",
+                                                                "github": "github"}.get(k, "googlechrome"), v)
+                     for k, v in author.get("links", {}).items())
+    name = author.get("name") or "연구원"
+    out = f"## 만든 사람 · {name}\n\n"
+    if author.get("intro"):
+        out += f"> {author['intro']}\n\n"
+    if links:
+        out += f"<p>{links}</p>\n\n"
+    return out + "CONNECT AI LAB 공동 연구 · 강화학습으로 만든 회사 의사결정 모델을 각자 만들고, 함께 연결해 논문으로 씁니다.\n"
+
+
 def simulator_gif():
     return (f'<p align="center"><img src="{RAW}docs/images/hero.gif" alt="모델이 회사를 운영하는 하루" width="88%"></p>\n'
             '<p align="center"><sub>시뮬레이터 속 회사 · 맨 위층의 모델이 판단하면 빛줄기가 그 층으로 내려가고, 결과가 돈 · 만족 · 사고로 돌아옵니다</sub></p>\n')
 
 
-def card(repo, results=None, meta=None, backend="mlx", base=BASE_MODEL, results_image=None):
+def card(repo, results=None, meta=None, backend="mlx", base=BASE_MODEL, results_image=None, author=None):
     res = results or {}
     rows = []
     for name, r in res.items():
@@ -54,10 +91,12 @@ base_model: {base}
 library_name: {"mlx" if backend == "mlx" else "peft"}
 language: [ko]
 pipeline_tag: reinforcement-learning
-tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-making, gymnasium, connect-tycoon, connect-ai-lab, lora, qwen3.5]
+tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-making, gymnasium, connect-tycoon, connect-ai-lab, connectailab, lora, qwen3.5]
 ---
 
 {brand_header()}
+
+{author_section(author)}
 
 # RL AI COMPANY DECISION MAKING MODEL
 
@@ -113,7 +152,7 @@ def repo_name(name, version="v1", kind=None):
     return f"connectailab-{n}-{v}" + (f"-{clean(kind)}" if kind else "")
 
 
-def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=None, private=False, results_png=None):
+def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=None, private=False, results_png=None, author=None):
     from huggingface_hub import HfApi
     api = HfApi(token=token or os.environ.get("HF_TOKEN"))
     repo = repo or f"{api.whoami()['name']}/{repo_name(api.whoami()['name'])}"
@@ -123,5 +162,9 @@ def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=N
     img = None
     if results_png:                                           # 성적 그래프는 저장소 안에 (모델마다 다르므로)
         api.upload_file(path_or_fileobj=results_png, path_in_repo="assets/results.png", repo_id=repo); img = "assets/results.png"
-    api.upload_file(path_or_fileobj=card(repo, results, meta, backend, results_image=img).encode("utf-8"), path_in_repo="README.md", repo_id=repo)
+    info = {"format": "connectailab/1", "repo": repo, "base_model": BASE_MODEL, "backend": backend,          # 모아서 비교할 때 읽는 정보
+            "adapter": "adapter" if backend == "mlx" else ".", "author": author,
+            "values": (meta or {}).get("values"), "profile": (meta or {}).get("profile"), "results": results}
+    api.upload_file(path_or_fileobj=json.dumps(info, ensure_ascii=False, indent=1).encode("utf-8"), path_in_repo="connectailab.json", repo_id=repo)
+    api.upload_file(path_or_fileobj=card(repo, results, meta, backend, results_image=img, author=author).encode("utf-8"), path_in_repo="README.md", repo_id=repo)
     return f"https://huggingface.co/{repo}"

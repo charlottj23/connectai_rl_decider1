@@ -7,8 +7,8 @@ from .policies import RulePolicy
 from .train import TEST_SEEDS, evaluate
 
 
-def model_card(brain, company, repo):
-    from .llm.hub import brand_header, simulator_gif
+def model_card(brain, company, repo, author=None):
+    from .llm.hub import author_section, brand_header, simulator_gif
     pol = J.JevPolicy(brain, values=company.values, config=company.cfg, keep=False, check=False)
     me, rule = evaluate(company, pol, TEST_SEEDS), evaluate(company, RulePolicy(), TEST_SEEDS)
     env = __import__("connect_tycoon").CompanyEnv(company=company)
@@ -29,6 +29,8 @@ tags: [connect-ai-lab, deep-reinforcement-learning, gymnasium, connect-company, 
 ---
 
 {brand_header()}
+
+{author_section(author)}
 
 # {brain.name} · AI 사장 (CONNECT TYCOON)
 
