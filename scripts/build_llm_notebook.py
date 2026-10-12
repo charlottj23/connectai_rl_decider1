@@ -116,9 +116,9 @@ print("선생님(작은 정책)", round(ct.evaluate(company, teacher, seeds=rang
 
 1. https://huggingface.co/settings/tokens 에서 **Write** 토큰을 만듭니다.
 2. Colab 왼쪽 🔑(보안 비밀)에 이름 `HF_TOKEN`, 값에 토큰을 넣고 **노트북 액세스**를 켭니다.
-3. **이름**을 영문으로 적습니다. 업로드 이름은 `connectailab-이름-버전` 입니다 (예: `connectailab-jay-v1`).
+3. **이름**을 영문으로 적습니다. 업로드 이름은 `connectailab-rl-이름-버전` 입니다 (예: `connectailab-rl-jay-v1` · rl = 강화학습 의사결정 모델).
    다시 학습해서 올릴 때는 버전을 `v2`, `v3`…으로 올립니다.
-4. **자기소개**를 적습니다. 이름 · 한 줄 소개 · 링크(유튜브 · 인스타 · 웹사이트 · 링크드인)가 모델 카드 맨 위 '만든 사람'에 들어갑니다. 비워 두면 빠집니다.
+4. **나를 알리는 글**을 자유롭게 적습니다. 무엇을 하는 사람인지, 내 사업 · 서비스 · 채널 · 연락처 등 알리고 싶은 것을 그대로 쓰면 모델 카드 맨 위 '만든 사람'에 들어갑니다. 비워 두면 빠집니다.
 5. 아래 셀을 실행하면 내 계정에 모델이 올라갑니다. 모델 카드(성적표 · 만든 방법 · 쓰는 법)와 **Reinforcement Learning** 분류가 함께 붙습니다.
 
 토큰은 코드에 적지 않습니다."""),
@@ -137,16 +137,13 @@ me = HfApi(token=HF_TOKEN).whoami()["name"]
 NAME = "jay"                                         #@param {type:"string"}
 VERSION = "v1"                                       #@param {type:"string"}
 PRIVATE = False                                      #@param {type:"boolean"}
-MODEL_NAME = repo_name(NAME, VERSION)                # connectailab-이름-버전
+MODEL_NAME = repo_name(NAME, VERSION)                # connectailab-rl-이름-버전
 
-# 자기소개 · 모델 카드 맨 위 '만든 사람'
-AUTHOR = "제이 · CONNECT AI LAB"                      #@param {type:"string"}
-INTRO = "AI 1인 기업을 만들고 가르칩니다"              #@param {type:"string"}
-YOUTUBE = ""                                         #@param {type:"string"}
-INSTAGRAM = ""                                       #@param {type:"string"}
-WEBSITE = ""                                         #@param {type:"string"}
-LINKEDIN = ""                                        #@param {type:"string"}
-author = make_author(AUTHOR, INTRO, youtube=YOUTUBE, instagram=INSTAGRAM, website=WEBSITE, linkedin=LINKEDIN)
+# 나를 알리는 글 · 형식 없이 자유롭게 (모델 카드 맨 위 '만든 사람'에 그대로 들어갑니다)
+ABOUT_ME = """
+"""
+author = make_author(ABOUT_ME)
+open("about_me.md", "w").write(ABOUT_ME)
 
 meta = json.load(open("llm_data/meta.json"))
 url = push("adapters/rl", repo=f"{me}/{MODEL_NAME}", results=results, meta=meta, backend="torch", token=HF_TOKEN, private=PRIVATE, author=author)
@@ -154,16 +151,19 @@ print("올라갔습니다 ·", url)""", None),
     ("md", """### (선택) 선생님 정책도 올리기
 
 시뮬레이터에서 PPO로 배운 작은 정책(brain.json)입니다. 언어 모델의 선생님이자, 그 자체로 강화학습 모델입니다."""),
-    ("code", """TEACHER_NAME = repo_name(NAME, VERSION, "teacher")   # connectailab-이름-버전-teacher
+    ("code", """TEACHER_NAME = repo_name(NAME, VERSION, "teacher")   # connectailab-rl-이름-버전-teacher
 spec = ct.CompanyBrain.make_spec(ct.CompanyBrain.default().spec, teacher, name=TEACHER_NAME, values=VALUES,
                                  researcher=me, config=company.cfg, profile="general",
                                  results={"test_profit": ct.evaluate(company, teacher)["profit"]})
 ct.CompanyBrain(spec).save("teacher.json")
 os.environ["HF_TOKEN"] = HF_TOKEN
-!connect-tycoon push --brain teacher.json --repo {me}/{TEACHER_NAME} --author "{AUTHOR}" --intro "{INTRO}" --link youtube={YOUTUBE} --link instagram={INSTAGRAM} --link website={WEBSITE} --link linkedin={LINKEDIN}""", None),
-    ("md", """## 8 · 모두의 모델 모으기 · 연결해 보기
+!connect-tycoon push --brain teacher.json --repo {me}/{TEACHER_NAME} --about-file about_me.md""", None),
+    ("md", """## 8 · (테스트 중) 모두의 모델 모으기 · 연결해 보기
 
-Hugging Face에서 이름이 `connectailab-`으로 시작하는 모델을 모두 찾아, **같은 공통 시험지**로 채점합니다.
+> 모델 연결(Connect AI) 실험은 아직 테스트 중입니다. 결과는 참고용으로 봐 주세요.
+
+
+Hugging Face에서 이름이 `connectailab-rl-`로 시작하는 강화학습 의사결정 모델을 모두 찾아, **같은 공통 시험지**로 채점합니다.
 그리고 모델들을 연결했을 때(확률 평균 · 다수결 · 가장 확신하는 모델에게 맡기기) 하나보다 나은지 봅니다. 공동 논문의 '연결 연구' 출발점입니다.
 
 - **공통 시험지** · 누구의 선생님에도 치우치지 않도록, 규칙 사장이 운영하는 아무도 학습에 쓰지 않은 달의 낮 판단(문의 · 환불 · 결제)
@@ -173,7 +173,7 @@ Hugging Face에서 이름이 `connectailab-`으로 시작하는 모델을 모두
     ("code", """from connect_tycoon.llm import collect as C
 from IPython.display import Markdown, display
 
-PREFIX = "connectailab-"                             #@param {type:"string"}
+PREFIX = "connectailab-rl-"                          #@param {type:"string"}
 QUESTIONS = 300                                      #@param {type:"integer"}
 INCLUDE_MINE = True                                  #@param {type:"boolean"}
 

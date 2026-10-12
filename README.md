@@ -110,11 +110,11 @@ connect-tycoon llm eval --data llm_data --adapter adapters/sft --adapter adapter
 connect-tycoon llm push --adapter adapters/rl --data llm_data --results eval.json
 ```
 
-**자기소개 · 모두의 모델 모으기**
+**나를 알리는 글 · 모두의 모델 모으기 (테스트 중)**
 
 ```bash
-connect-tycoon llm push --adapter adapters/rl --name jay --version v1 --author "제이" --intro "AI 1인 기업을 만들고 가르칩니다" --link youtube=@CONNECT-AI-LAB --link website=aicitybuilders.com
-connect-tycoon llm collect        # connectailab-으로 시작하는 모델을 모두 찾아 같은 시험지로 채점 · 연결(평균 · 다수결 · 가장 확신) 비교
+connect-tycoon llm push --adapter adapters/rl --name jay --version v1 --about-file about_me.md   # connectailab-rl-jay-v1 · 나를 알리는 글은 자유롭게
+connect-tycoon llm collect        # (테스트 중) connectailab-rl-로 시작하는 모델을 같은 시험지로 채점 · 연결(평균 · 다수결 · 가장 확신) 비교
 ```
 
 **Windows · Linux (NVIDIA GPU · PyTorch)** · 위 명령에 `--backend torch`를 붙입니다 (`pip install -e ".[llm]"`). Mac은 자동으로 MLX를 씁니다.
@@ -123,7 +123,7 @@ connect-tycoon llm collect        # connectailab-으로 시작하는 모델을 �
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/rl_decision_model_qwen_colab.ipynb)
 
-첫 결과 · [WonseokJayJung/connectailab-jay-v1](https://huggingface.co/WonseokJayJung/connectailab-jay-v1) · 학습 전 한 달 −1,340만 → 지도학습 +635만 → 강화학습 +757만 · 실제 사기 거래 손실 37% → 71% 줄임
+첫 결과 · [WonseokJayJung/connectailab-rl-jay-v1](https://huggingface.co/WonseokJayJung/connectailab-rl-jay-v1) · 학습 전 한 달 −1,340만 → 지도학습 +635만 → 강화학습 +757만 · 실제 사기 거래 손실 37% → 71% 줄임
 
 강화학습한 작은 정책의 판단을 JEV 형식 데이터로 내보낼 수도 있습니다: `connect-tycoon jev --brain my-model.json --months 10 --out jev.jsonl`
 

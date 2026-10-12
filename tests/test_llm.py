@@ -69,21 +69,20 @@ def test_model_card_has_results_and_brand():
 
 def test_upload_name_rule():
     from connect_tycoon.llm.hub import repo_name
-    assert repo_name("Jay", "v1") == "connectailab-jay-v1"
-    assert repo_name("Min Ji", "V2") == "connectailab-min-ji-v2"
-    assert repo_name("team3", "v1", "teacher") == "connectailab-team3-v1-teacher"
+    assert repo_name("Jay", "v1") == "connectailab-rl-jay-v1"
+    assert repo_name("Min Ji", "V2") == "connectailab-rl-min-ji-v2"
+    assert repo_name("team3", "v1", "teacher") == "connectailab-rl-team3-v1-teacher"
 
 
 def test_author_intro_in_card():
     from connect_tycoon.llm.hub import card, make_author
-    a = make_author("제이", "AI 1인 기업을 만들고 가르칩니다", youtube="@CONNECT-AI-LAB", instagram="@aimentorjay",
-                    website="aicitybuilders.com", linkedin="not a link")
-    assert a["links"] == {"youtube": "https://www.youtube.com/@CONNECT-AI-LAB", "instagram": "https://www.instagram.com/aimentorjay",
-                          "website": "https://aicitybuilders.com"}
-    c = card("me/connectailab-jay-v1", author=a)
-    assert c.index("## 만든 사람 · 제이") < c.index("# RL AI COMPANY DECISION MAKING MODEL")
-    assert "aicitybuilders.com" in c and "connectailab" in c.split("---")[1]
-    assert make_author("", "", youtube="") is None and "## 만든 사람" not in card("me/x")
+    about = "빵집을 운영하며 AI로 주문을 자동화하고 있어요.\n- 가게: https://example.com\n- 유튜브 @bakery"
+    a = make_author(about)
+    c = card("me/connectailab-rl-jay-v1", author=a)
+    assert c.index("## 만든 사람") < c.index("# RL AI COMPANY DECISION MAKING MODEL")
+    assert "빵집을 운영하며" in c and "https://example.com" in c and "테스트 중" in c
+    assert "connectailab" in c.split("---")[1]
+    assert make_author("   ") is None and "## 만든 사람" not in card("me/x")
 
 
 def test_collect_scoring_and_connection():

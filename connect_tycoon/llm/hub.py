@@ -26,41 +26,20 @@ def brand_header():
             f'<p align="center">{badges}</p>\n')
 
 
-LINK_LABEL = {"youtube": "YouTube", "instagram": "Instagram", "website": "웹사이트", "linkedin": "LinkedIn", "github": "GitHub", "blog": "블로그"}
+TESTING = "모델 연결(Connect AI) 실험은 테스트 중입니다."
 
 
-def make_author(name="", intro="", **links):
-    """자기소개 · 모델 카드 맨 위 '만든 사람'과 connectailab.json에 들어갑니다. 링크는 http로 시작하는 것만 씁니다."""
-    clean = lambda s: " ".join(str(s or "").split())[:600]
-    ok = {}
-    for k, v in links.items():
-        v = str(v or "").strip()
-        if not v:
-            continue
-        if v.startswith("@") and k in ("youtube", "instagram"):           # @아이디만 적어도 됩니다
-            v = {"youtube": "https://www.youtube.com/", "instagram": "https://www.instagram.com/"}[k] + (v if k == "youtube" else v[1:])
-        elif not v.startswith(("http://", "https://")) and "." in v and " " not in v:
-            v = "https://" + v                                            # aicitybuilders.com → https://aicitybuilders.com
-        if v.startswith(("http://", "https://")):
-            ok[k] = v
-    a = {"name": clean(name)[:80], "intro": clean(intro), "links": ok}
-    return a if a["name"] or a["intro"] or a["links"] else None
+def make_author(about=""):
+    """자기소개 · 정해진 칸 없이 자유롭게 쓴 글 (마크다운). 모델 카드 맨 위 '만든 사람'과 connectailab.json에 들어갑니다."""
+    text = "\n".join(line.rstrip() for line in str(about or "").strip().splitlines())[:3000]
+    return {"about": text} if text else None
 
 
 def author_section(author):
-    """'만든 사람' 섹션 (마크다운). 이름 · 한 줄 소개 · 링크 배지."""
-    if not author:
+    """'만든 사람' 섹션 · 쓴 글을 그대로 보여 줍니다 (자기 사업 · 서비스 · 채널 홍보)."""
+    if not author or not author.get("about"):
         return ""
-    links = " ".join(_badge(LINK_LABEL.get(k, k), "바로가기", {"youtube": "youtube", "instagram": "instagram", "linkedin": "linkedin",
-                                                                "github": "github"}.get(k, "googlechrome"), v)
-                     for k, v in author.get("links", {}).items())
-    name = author.get("name") or "연구원"
-    out = f"## 만든 사람 · {name}\n\n"
-    if author.get("intro"):
-        out += f"> {author['intro']}\n\n"
-    if links:
-        out += f"<p>{links}</p>\n\n"
-    return out + "CONNECT AI LAB 공동 연구 · 강화학습으로 만든 회사 의사결정 모델을 각자 만들고, 함께 연결해 논문으로 씁니다.\n"
+    return f"## 만든 사람\n\n{author['about']}\n\n<sub>CONNECT AI LAB 공동 연구 참여 모델 · {TESTING}</sub>\n"
 
 
 def simulator_gif():
@@ -136,20 +115,21 @@ tags: [reinforcement-learning, deep-reinforcement-learning, grpo, decision-makin
 
 - [CONNECT AI LAB 유튜브]({YT}) · AI 1인 기업 · 로컬 AI · 강화학습 무료 강의
 - [AI CITY BUILDERS](https://www.aicitybuilders.com) · AI 비즈니스의 정석 · [강화학습 AI 과정](https://www.aicitybuilders.com/robot)
-- [Connect AI](https://www.ezerai.xyz) · 기업 의사결정 모델 C1 공동 연구
+- [Connect AI](https://www.ezerai.xyz) · 기업 의사결정 모델 C1 공동 연구 · 모델 연결은 테스트 중
 
 합성 회사 시뮬레이터 위의 연구 · 교육용 모델입니다. 실제 경영 판단에 쓰기 전에 그 회사의 기록으로 다시 검증하세요.
 """
 
 
 def repo_name(name, version="v1", kind=None):
-    """업로드 이름 규칙 · connectailab-이름-버전 (예: connectailab-jay-v1 · 선생님 정책은 connectailab-jay-v1-teacher)."""
+    """업로드 이름 규칙 · connectailab-rl-이름-버전 (예: connectailab-rl-jay-v1 · 선생님 정책은 connectailab-rl-jay-v1-teacher).
+    rl = 강화학습 의사결정 모델 · 같은 connectailab이라도 다른 종류의 모델과 섞이지 않게 합니다."""
     import re
     clean = lambda s: re.sub(r"[^a-z0-9.]+", "-", str(s).lower()).strip("-.")
     n, v = clean(name), clean(version) or "v1"
     if not n:
         raise ValueError("이름은 영문 · 숫자로 적어 주세요 (예: jay, minji, team3)")
-    return f"connectailab-{n}-{v}" + (f"-{clean(kind)}" if kind else "")
+    return f"connectailab-rl-{n}-{v}" + (f"-{clean(kind)}" if kind else "")
 
 
 def push(adapter_dir, repo=None, results=None, meta=None, backend="mlx", token=None, private=False, results_png=None, author=None):

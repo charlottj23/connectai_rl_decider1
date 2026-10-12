@@ -1,4 +1,4 @@
-"""모두의 모델 모으기 · Hugging Face에서 connectailab-으로 시작하는 모델을 찾아 같은 시험지로 채점하고, 연결(앙상블)해 봅니다.
+"""[테스트 중] 모두의 모델 모으기 · Hugging Face에서 connectailab-rl-으로 시작하는 모델을 찾아 같은 시험지로 채점하고, 연결(앙상블)해 봅니다.
 
     connect-tycoon llm collect --out collect            # 찾기 → 공통 시험지 → 채점 → 순위표 · 연결 결과
     from connect_tycoon.llm import collect as C
@@ -16,7 +16,7 @@ import os
 from .data import load
 from .format import LETTERS
 
-PREFIX = "connectailab-"
+PREFIX = "connectailab-rl-"                 # 강화학습 의사결정 모델만 (connectailab-rl-이름-버전)
 TEST_SEEDS = range(23000, 23003)
 
 

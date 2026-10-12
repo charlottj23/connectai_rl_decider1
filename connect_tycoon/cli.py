@@ -158,7 +158,7 @@ def cmd_push(args):
     api.create_repo(repo, exist_ok=True)
     co = ct.make_company(config=b.spec["company"].get("config"), profile=b.spec["company"].get("profile"))   # 학습한 회사 그대로
     from .llm.hub import make_author
-    card = model_card(b, co, repo, author=make_author(args.author, args.intro, **_links(args.link)))
+    card = model_card(b, co, repo, author=make_author(_about(args)))
     api.upload_file(path_or_fileobj=args.brain, path_in_repo="brain.json", repo_id=repo)
     api.upload_file(path_or_fileobj=card.encode("utf-8"), path_in_repo="README.md", repo_id=repo)
     print(f"https://huggingface.co/{repo}")
@@ -191,6 +191,7 @@ def cmd_llm(args):
         from .llm import collect as C
         out = args.out if args.out != "llm_out" else "collect"
         models = C.find(prefix=args.prefix, limit=args.limit) + [C.local(p) for p in (args.adapter or [])]
+        print("모델 연결(Connect AI)은 테스트 중인 기능입니다 · 결과는 참고용입니다")
         print(f"찾은 모델 {len(models)}개 · " + ", ".join(m["repo"] for m in models))
         test = C.common_test(os.path.join(out, "test"))
         res = C.score(models, test, out_dir=out, max_rows=args.questions)
@@ -233,19 +234,17 @@ def cmd_llm(args):
         from .llm.hub import repo_name
         repo = args.repo or f"{HfApi().whoami()['name']}/{repo_name(args.name or HfApi().whoami()['name'], args.version)}"
         from .llm.hub import make_author
-        print(push(args.adapter[0], repo=repo, results=res, meta=meta, author=make_author(args.author, args.intro, **_links(args.link))))
+        print(push(args.adapter[0], repo=repo, results=res, meta=meta, author=make_author(_about(args))))
 
 
-def _links(items):
-    """--link youtube=https://... --link website=https://... → dict"""
-    out = {}
-    for it in items or []:
-        k, _, v = it.partition("=")
-        if v: out[k.strip().lower()] = v.strip()
-    return out
+def _about(args):
+    """--about "글" 또는 --about-file 소개.md · 정해진 형식 없이 자유롭게."""
+    if getattr(args, "about_file", None):
+        return open(args.about_file, encoding="utf-8").read()
+    return getattr(args, "about", "") or ""
 
 
-AUTHOR_HELP = "자기소개 · 모델 카드 맨 위 '만든 사람'에 들어갑니다"
+ABOUT_HELP = "자기소개 글 · 자유롭게 (사업 · 서비스 · 채널 링크 등) · 모델 카드 맨 위 '만든 사람'에 그대로 들어갑니다"
 
 
 def _utf8_console():
@@ -288,13 +287,12 @@ def main(argv=None):
     s.add_argument("--epochs", type=float, default=1.0); s.add_argument("--lr", type=float, help="기본 sft 1e-4 · rl 5e-6")
     s.add_argument("--steps", type=int, default=100); s.add_argument("--batch", type=int, default=8); s.add_argument("--beta", type=float, default=0.2); s.add_argument("--max-rows", type=int, default=1500)
     s.add_argument("--backend", default="auto", choices=["auto", "mlx", "torch"], help="mlx(Mac) · torch(Windows · Linux · NVIDIA GPU)")
-    s.add_argument("--prefix", default="connectailab-", help="collect: 모을 모델 이름의 시작"); s.add_argument("--limit", type=int, default=200)
+    s.add_argument("--prefix", default="connectailab-rl-", help="collect: 모을 모델 이름의 시작"); s.add_argument("--limit", type=int, default=200)
     s.add_argument("--questions", type=int, default=300, help="collect: 모델마다 채점할 문제 수")
     s.add_argument("--months", type=int, default=0, help="eval: 시뮬레이터에서 운영해 볼 달 수 (느림)"); s.add_argument("--save")
     s.add_argument("--results", help="push: eval --save로 저장한 성적"); s.add_argument("--repo")
-    s.add_argument("--name", help="push: 업로드 이름 connectailab-이름-버전의 이름 (영문)"); s.add_argument("--version", default="v1")
-    s.add_argument("--author", default="", help="push: 이름 (" + AUTHOR_HELP + ")"); s.add_argument("--intro", default="", help="push: 한 줄 자기소개")
-    s.add_argument("--link", action="append", help="push: 링크 · youtube=https://... · instagram= · website= · linkedin= · github=")
+    s.add_argument("--name", help="push: 업로드 이름 connectailab-rl-이름-버전의 이름 (영문)"); s.add_argument("--version", default="v1")
+    s.add_argument("--about", default="", help="push: " + ABOUT_HELP); s.add_argument("--about-file", help="push: 자기소개 글 파일 (마크다운)")
     s.set_defaults(fn=cmd_llm)
     s = sub.add_parser("jev", help="JEV 기록 내보내기"); s.add_argument("--brain", default="default"); s.add_argument("--seed", type=int, default=7000)
     s.add_argument("--months", type=int, default=1); s.add_argument("--out", default="jev_month.jsonl"); s.add_argument("--upgrades", help=UPGRADE_HELP); s.add_argument("--config")
@@ -307,8 +305,7 @@ def main(argv=None):
     s.add_argument("--fps", type=int, default=30); s.add_argument("--mp4", action="store_true"); s.add_argument("--upgrades", help=UPGRADE_HELP)
     s.set_defaults(fn=cmd_record)
     s = sub.add_parser("push", help="허깅페이스에 올리기 (HF_TOKEN)"); s.add_argument("--brain", required=True); s.add_argument("--repo")
-    s.add_argument("--author", default="", help="이름 (" + AUTHOR_HELP + ")"); s.add_argument("--intro", default="", help="한 줄 자기소개")
-    s.add_argument("--link", action="append", help="링크 · youtube=https://... · instagram= · website= · linkedin= · github=")
+    s.add_argument("--about", default="", help=ABOUT_HELP); s.add_argument("--about-file", help="자기소개 글 파일 (마크다운)")
     s.set_defaults(fn=cmd_push)
     args = p.parse_args(argv)
     if not args.cmd:
