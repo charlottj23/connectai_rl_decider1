@@ -426,6 +426,8 @@ class App:
             self.toast(f"불러오지 못했습니다 · {res[1][:60]}", "bad", "warn")
 
     def drop_file(self, path):
+        if self.screen == "play":                     # 학습 화면: 그 brain.json에서 이어서 학습
+            self.studio.load_file(path); return
         try:
             b = ct.CompanyBrain.from_file(path)
         except Exception as e:

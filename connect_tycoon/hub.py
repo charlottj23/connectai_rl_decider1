@@ -99,11 +99,3 @@ def push_brain(path, repo=None, version="v1", name=None, author=None, token=None
     api.upload_file(path_or_fileobj=model_card(b, co, repo, author=author).encode("utf-8"), path_in_repo="README.md", repo_id=repo)
     return f"https://huggingface.co/{repo}"
 
-
-def find_about():
-    """자기소개 글 · 지금 폴더나 다운로드 폴더의 about_me.md (없으면 빈 글)."""
-    for d in (os.getcwd(), os.path.join(os.path.expanduser("~"), "Downloads")):
-        f = os.path.join(d, "about_me.md")
-        if os.path.exists(f):
-            return open(f, encoding="utf-8").read()
-    return ""

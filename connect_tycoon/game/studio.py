@@ -9,6 +9,7 @@
 시뮬레이터가 선택지마다 한 달을 끝까지 다시 돌려 그 답이 좋았는지 바로 알려 줍니다.
 """
 import math
+import re
 
 import pygame
 
@@ -41,7 +42,7 @@ GUIDE = [("watch", "v0이 회사를 운영합니다", "규칙 사장을 따라 �
          ("train", "학습 버튼을 누르세요", "시뮬레이터 회사를 60번 × 24달 운영하며 강화학습 (노트북 CPU로 몇 분)", "train"),
          ("curve", "학습 곡선", "3번마다 시험용 달을 운영해 본 한 달 이익 · 가장 좋았던 순간의 모델이 다음 버전이 됩니다", "graph"),
          ("real", "실제 데이터로 시험", "학습에 쓰지 않은 진짜 카드 거래 713건 · 진짜 사기 177건 중 몇 건을 잡았나", "real"),
-         ("save", "저장하고 올리기", "저장 = 다운로드 폴더에 brain.json (Colab에서 Qwen의 선생님) · 올리기 = Hugging Face에 내 모델 공개", "save")]
+         ("save", "brain.json 저장", "다운로드 폴더에 저장 · Colab에서 Qwen의 선생님 · 다음에 켜면 이어하기 · 다른 컴퓨터에선 이 창에 끌어다 놓기", "save")]
 LABEL_TIP = ("label", "모델이 헷갈리면 사람에게 묻습니다", "확신이 75%보다 낮은 판단 · 내가 고른 답은 라벨이 되어 다음 학습에 들어갑니다", None)
 
 
@@ -60,7 +61,6 @@ class Studio:
         self.guide = []               # 끝낸 안내 단계
         self.show_guide = True        # 그림 만들 때는 끕니다 (scripts/make_media.py)
         self.rects = {}               # 안내가 가리킬 곳 (그릴 때 기록)
-        self.uploading, self.up_result = False, None
 
     # ── 저장 · 이어하기 ───────────────────────────────────────────────────
     def save_state(self):
@@ -113,8 +113,7 @@ class Studio:
         if st == "done":
             res = a.trainer.result
             pol = ct.LinearPolicy.from_json(res["policy"])
-            n = len(self.versions)
-            name = f"v{n}"
+            name = self.next_name()
             spec = ct.CompanyBrain.make_spec(a.entry("jay-company")["brain"].spec, pol, name=f"{a.career.company}-{name}".replace(" ", "-").lower(),
                                              values=self.values, researcher="CONNECT TYCOON", config=a.career.config,
                                              results={"profit": res["results"]["new"]["profit"], "labels": len(self.labels)},
@@ -190,7 +189,9 @@ class Studio:
             self.result(surf)
         if self.job == "v0":
             self.splash(surf, "모델 준비 중 · 규칙 사장을 따라 배우는 중")
-        self.upload_poll()
+        elif self.job == "load":
+            self.splash(surf, "brain.json 불러오는 중 · 시험 달로 채점")
+        self.load_poll()
         if self.show_guide:
             self.coach(surf)
 
@@ -308,7 +309,7 @@ class Studio:
             ui.bar(surf, (x + 6, y + 18, w - 12, 3), it / LENGTH)
             ui.label(surf, f"학습 중 {it}/{LENGTH}", x + 6, y + 3, ACID, bold=True)
         else:
-            nxt = f"v{len(self.versions)}"
+            nxt = self.next_name()
             if self.job is None:                          # 숨 쉬듯 빛나는 학습 버튼
                 g = 0.5 + 0.5 * math.sin(a.t_real * 2.4)
                 glow = pygame.Surface((w + 10, 36), pygame.SRCALPHA)
@@ -359,15 +360,10 @@ class Studio:
         # 저장
         by = a.vh - 24
         self.rects["save"] = pygame.Rect(x, by, w, 18)
-        bw = (w - 4) // 3
-        if ui.button(surf, (x, by, bw, 18), "저장", "save", kind="ghost", enabled=bool(cur) and not self.job,
-                     tip="brain.json을 다운로드 폴더에 · Colab 1단계에서 이 파일을 올리면 Qwen의 선생님이 됩니다"):
+        if ui.button(surf, (x, by, w // 2 - 2, 18), "brain.json 저장", "save", kind="ghost", enabled=bool(cur) and not self.job,
+                     tip="다운로드 폴더에 저장 · Colab 1단계에서 올리면 Qwen의 선생님 · 이 창에 끌어다 놓으면 그 모델에서 이어서 학습"):
             self.save()
-        if ui.button(surf, (x + bw + 2, by, bw, 18), "…" if self.uploading else "올리기", "hf", kind="ghost",
-                     enabled=bool(cur) and not self.job and not self.uploading,
-                     tip="Hugging Face에 내 모델 공개 · connectailab-rl-아이디-버전-teacher (처음 한 번 터미널에서 hf auth login)"):
-            self.upload()
-        if ui.button(surf, (x + 2 * (bw + 2), by, w - 2 * (bw + 2), 18), "처음부터", "dice", kind="ghost", enabled=not self.job):
+        if ui.button(surf, (x + w // 2 + 2, by, w // 2 - 2, 18), "처음부터", "dice", kind="ghost", enabled=not self.job):
             self.begin()
 
     def save(self):
@@ -387,54 +383,59 @@ class Studio:
         a.toast(f"저장 · {dst}", "good", "save")
         self.done("save")
 
-    def upload(self):
-        """올리기 · 지금 버전의 brain.json을 Hugging Face에 (모델 카드 · 성적 · 자기소개 about_me.md 함께)."""
-        import os
-        import tempfile
+    def load_file(self, path):
+        """저장해 둔 brain.json에서 이어서 학습 · 창에 끌어다 놓으면 그 모델이 회사를 맡고, 다음 학습은 그 모델에서 출발합니다."""
         import threading
         a = self.app
-        if self.uploading or not self.current:
-            return
-        e, version = a.entry(self.current["rid"]), self.current["name"]
-        self.uploading = True
-        a.toast("Hugging Face에 올리는 중 · 모델 카드에 넣을 성적을 계산합니다 (1분 안팎)", "info", "hf")
+        if self.job:
+            a.toast("학습이 끝난 뒤에 불러와 주세요", "warn", "warn"); return
+        try:
+            b = ct.CompanyBrain.from_file(path)
+        except Exception as e:
+            a.toast(f"brain.json이 아닙니다 · {str(e)[:50]}", "bad", "warn"); return
+        self.job = "load"
+        co_args = (dict(a.career.config), dict(self.values), a.career.profile)
 
-        def work():
+        def work():                                       # 학습이 끝났을 때와 같은 시험으로 다시 채점합니다
             try:
-                from huggingface_hub import HfApi
-            except ImportError:
-                self.up_result = ("bad", '올리기 도구가 없습니다 · pip install -e ".[game]" 로 다시 설치해 주세요'); return
-            try:
-                HfApi(token=os.environ.get("HF_TOKEN")).whoami()
-            except Exception:
-                self.up_result = ("bad", "먼저 터미널에서 hf auth login 을 한 번 해 주세요 (Write 토큰)"); return
-            try:
-                from ..hub import find_about, push_brain
-                from ..llm.hub import make_author
-                path = e.get("path")
-                if not path:
-                    path = os.path.join(tempfile.mkdtemp(), "brain.json"); e["brain"].save(path)
-                self.up_result = ("good", push_brain(path, version=version, author=make_author(find_about())))
-            except Exception as ex:
-                self.up_result = ("bad", f"올리지 못했습니다 · {str(ex)[:70]}")
+                from connect_tycoon import backtest
+                from .trainer import TEST_MONTHS
+                config, values, profile = co_args
+                co = ct.Company(b.intuition, ct.load_pool(), values=values, config=config, profile=profile)
+                res = {"new": ct.evaluate(co, b.policy, TEST_MONTHS)}
+                if backtest.available():
+                    c, d = backtest.card(b.policy, co), backtest.demand(b.policy, co)
+                    res["real"] = {"saved": c["saved"], "caught": c["caught"], "fraud": c["fraud"], "cases": c["cases"], "demand": d["profit"]}
+                self.loaded = ("ok", b, res)
+            except Exception as e:
+                self.loaded = ("err", str(e)[:60], None)
+        self.loaded = None
         threading.Thread(target=work, daemon=True).start()
 
-    def upload_poll(self):
-        res, self.up_result = self.up_result, None
-        if not res:
+    def load_poll(self):
+        res = getattr(self, "loaded", None)
+        if self.job != "load" or not res:
             return
-        self.uploading = False
-        a = self.app
-        if res[0] == "good":
-            a.toast("올렸습니다 · " + res[1].replace("https://", ""), "good", "hf"); a.sfx("level")
-            self.done("save")
-            try:
-                import webbrowser
-                webbrowser.open(res[1])
-            except Exception:
-                pass
-        else:
-            a.toast(res[1], "bad", "warn")
+        a, self.loaded, self.job = self.app, None, None
+        if res[0] != "ok":
+            a.toast("불러오지 못했습니다 · " + res[1], "bad", "warn"); return
+        b, r_ = res[1], res[2]
+        m = re.search(r"-(v\d+)$", b.name)
+        name = m.group(1) if m and m.group(1) not in {v["name"] for v in self.versions} else self.next_name()
+        r = a._add_brain(b, source="불러온 brain.json", title=name)
+        nr = r_["new"]
+        self.versions.append({"name": name, "rid": r["id"], "profit": nr["profit"], "sat": nr["sat"], "incidents": nr["incidents"],
+                              "human": None, "real": r_.get("real")})
+        if all(k in self.values for k in b.values): self.values.update(b.values)      # 그 모델이 배운 보상 비중
+        a.career.mode, a.career.ai = "ai", r["id"]
+        self.save_state(); a.career.save()
+        a.start_month(restart=True)
+        a.toast(f"불러왔습니다 · {name}이 회사를 맡습니다 · 학습을 누르면 여기서 이어서", "good", "brain")
+        a.sfx("level")
+
+    def next_name(self):
+        nums = [int(v["name"][1:]) for v in self.versions if re.fullmatch(r"v\d+", v["name"])]
+        return f"v{max(nums) + 1}" if nums else f"v{len(self.versions)}"
 
     # ── 처음 켠 사람을 위한 안내 ──────────────────────────────────────────
     def done(self, key):
