@@ -123,7 +123,7 @@ connect-tycoon llm collect        # connectailab-으로 시작하는 모델을 �
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/rl_decision_model_qwen_colab.ipynb)
 
-첫 결과 · [WonseokJayJung/rl-ai-company-decision-model-0.8b](https://huggingface.co/WonseokJayJung/rl-ai-company-decision-model-0.8b) · 학습 전 한 달 −1,340만 → 지도학습 +635만 → 강화학습 +757만 · 실제 사기 거래 손실 37% → 71% 줄임
+첫 결과 · [WonseokJayJung/connectailab-jay-v1](https://huggingface.co/WonseokJayJung/connectailab-jay-v1) · 학습 전 한 달 −1,340만 → 지도학습 +635만 → 강화학습 +757만 · 실제 사기 거래 손실 37% → 71% 줄임
 
 강화학습한 작은 정책의 판단을 JEV 형식 데이터로 내보낼 수도 있습니다: `connect-tycoon jev --brain my-model.json --months 10 --out jev.jsonl`
 
