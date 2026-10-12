@@ -14,6 +14,7 @@ AI 교육 브랜드 **[CONNECT AI LAB](https://www.youtube.com/@CONNECT-AI-LAB) 
 |---|---|
 | 설명 (모션그래픽 · 단계별 안내) | [ezerai.xyz/models/rl](https://www.ezerai.xyz/models/rl) |
 | 시뮬레이터 프로그램 | 이 저장소 · 아래 [설치](#설치) |
+| 내 RL 모델 바로 올리기 (Colab · 1분) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/upload_brain_colab.ipynb) |
 | Qwen으로 옮기기 (Colab) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/rl_decision_model_qwen_colab.ipynb) |
 | 첫 결과 (Hugging Face) | [WonseokJayJung/connectailab-rl-jay-v1](https://huggingface.co/WonseokJayJung/connectailab-rl-jay-v1) |
 
@@ -183,6 +184,10 @@ connect-tycoon llm sft --backend torch --data llm_data --out adapters/sft
 GPU가 없는 Windows 노트북은 Colab을 쓰세요.
 
 ### Hugging Face에 올리기 · 이름 규칙
+
+**게임에서 저장한 brain.json만 바로 올리기 (1분 · GPU 필요 없음)**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/wonseokjung/connect-tycoon/blob/main/notebooks/upload_brain_colab.ipynb)
 
 - 이름은 **`connectailab-rl-이름-버전`** (예: `connectailab-rl-jay-v1`) · rl = 강화학습 의사결정 모델 · 선생님 정책은 `…-teacher`
 - 처음 한 번 `hf auth login` (Write 토큰) 또는 환경변수 `HF_TOKEN` · 토큰은 코드에 적지 않습니다
