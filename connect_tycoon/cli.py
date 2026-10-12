@@ -13,7 +13,6 @@
 import argparse
 import json
 import os
-import re
 import sys
 
 UPGRADE_HELP = "업그레이드 단계 JSON, 예: '{\"demand\":1,\"logistics\":1}'"
@@ -143,25 +142,12 @@ def cmd_record(args):
 
 
 def cmd_push(args):
-    try:
-        from huggingface_hub import HfApi
-    except ImportError:
+    import importlib.util
+    if not importlib.util.find_spec("huggingface_hub"):
         sys.exit("pip install huggingface_hub 가 필요합니다")
-    import connect_tycoon as ct
-    from .hub import model_card
-    b = ct.CompanyBrain.from_file(args.brain)
-    api = HfApi(token=os.environ.get("HF_TOKEN"))
-    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", b.name).strip("-.").lower()
-    if not args.repo and not safe:
-        sys.exit(f"두뇌 이름 {b.name!r}은 허깅페이스 저장소 이름으로 쓸 수 없습니다. --repo 아이디/connect-company-영문이름 을 붙여 주세요")
-    repo = args.repo or f"{api.whoami()['name']}/connect-company-{safe}"
-    api.create_repo(repo, exist_ok=True)
-    co = ct.make_company(config=b.spec["company"].get("config"), profile=b.spec["company"].get("profile"))   # 학습한 회사 그대로
+    from .hub import push_brain
     from .llm.hub import make_author
-    card = model_card(b, co, repo, author=make_author(_about(args)))
-    api.upload_file(path_or_fileobj=args.brain, path_in_repo="brain.json", repo_id=repo)
-    api.upload_file(path_or_fileobj=card.encode("utf-8"), path_in_repo="README.md", repo_id=repo)
-    print(f"https://huggingface.co/{repo}")
+    print(push_brain(args.brain, repo=args.repo, version=args.version, name=args.name, author=make_author(_about(args))))
 
 
 def _llm_backend(name):
@@ -304,7 +290,9 @@ def main(argv=None):
     s.add_argument("--day", type=int, default=0); s.add_argument("--seed", type=int, default=7000); s.add_argument("--size", default="1280x720")
     s.add_argument("--fps", type=int, default=30); s.add_argument("--mp4", action="store_true"); s.add_argument("--upgrades", help=UPGRADE_HELP)
     s.set_defaults(fn=cmd_record)
-    s = sub.add_parser("push", help="허깅페이스에 올리기 (HF_TOKEN)"); s.add_argument("--brain", required=True); s.add_argument("--repo")
+    s = sub.add_parser("push", help="brain.json을 허깅페이스에 올리기 · connectailab-rl-이름-버전-teacher (hf auth login 또는 HF_TOKEN)")
+    s.add_argument("--brain", required=True); s.add_argument("--repo")
+    s.add_argument("--name", help="이름 (영문) · 없으면 허깅페이스 아이디"); s.add_argument("--version", default="v1", help="버전 (예: v2)")
     s.add_argument("--about", default="", help=ABOUT_HELP); s.add_argument("--about-file", help="자기소개 글 파일 (마크다운)")
     s.set_defaults(fn=cmd_push)
     args = p.parse_args(argv)

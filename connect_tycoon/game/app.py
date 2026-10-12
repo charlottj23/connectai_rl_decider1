@@ -618,6 +618,7 @@ class App:
         elif k in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4):
             self.speed = {pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 4, pygame.K_4: 8}[k]; self.paused = False
         elif k == pygame.K_m: self.toggle_music()
+        elif k == pygame.K_h: self.studio.guide, self.studio.show_guide = [], True     # 처음 안내 다시 보기
         elif k == pygame.K_f: self.toggle_fullscreen()
         elif k == pygame.K_TAB and self.modal is None: self.modal = "jev"
 

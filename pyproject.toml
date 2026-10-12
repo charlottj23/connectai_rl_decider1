@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-game = ["pygame-ce>=2.4"]
+game = ["pygame-ce>=2.4", "huggingface_hub>=0.20"]          # 게임 안 Hugging Face 올리기 버튼까지
 gym = ["gymnasium>=0.29"]
 hub = ["huggingface_hub>=0.20"]
 llm-mac = ["mlx-lm>=0.32"]                                        # Mac: Qwen 지도학습 · 강화학습 (MLX)

@@ -35,6 +35,14 @@ STAKES = {"refund": "악용이면 환불한 만큼 손해 · 정상 손님을 �
           "security": "사기를 통과시키면 금액만큼 손해 · 정상 결제를 막으면 금액의 30% 손해",
           "cs": "위험한 문의를 사람이 안 보면 사고 · 급한 문의를 미루면 만족 하락"}
 REAL_TIP = "학습에 쓰지 않은 실제 기록으로 다시 채점 · 카드 거래 검토 대기열(ULB) · 소매 · 호텔 · 자전거 대여의 하루 수요"
+# 처음 켠 사람을 위한 안내 · 순서대로 (id, 제목, 설명, 가리킬 곳). 끝나면 다시 나오지 않습니다 (H로 다시 보기)
+GUIDE = [("watch", "v0이 회사를 운영합니다", "규칙 사장을 따라 배운 모델 · 판단이 LIVE에 흐릅니다 (상황 → 행동 · 확신 · 보상)", "live"),
+         ("reward", "무엇이 중요한지 정합니다", "이익 · 고객 만족 · 위험 · 모델은 이 비중으로 계산한 결과 점수(보상)를 키우도록 배웁니다", "reward"),
+         ("train", "학습 버튼을 누르세요", "시뮬레이터 회사를 60번 × 24달 운영하며 강화학습 (노트북 CPU로 몇 분)", "train"),
+         ("curve", "학습 곡선", "3번마다 시험용 달을 운영해 본 한 달 이익 · 가장 좋았던 순간의 모델이 다음 버전이 됩니다", "graph"),
+         ("real", "실제 데이터로 시험", "학습에 쓰지 않은 진짜 카드 거래 713건 · 진짜 사기 177건 중 몇 건을 잡았나", "real"),
+         ("save", "저장하고 올리기", "저장 = 다운로드 폴더에 brain.json (Colab에서 Qwen의 선생님) · 올리기 = Hugging Face에 내 모델 공개", "save")]
+LABEL_TIP = ("label", "모델이 헷갈리면 사람에게 묻습니다", "확신이 75%보다 낮은 판단 · 내가 고른 답은 라벨이 되어 다음 학습에 들어갑니다", None)
 
 
 class Studio:
@@ -49,12 +57,16 @@ class Studio:
         self.asked_day = -1
         self.job = None
         self.curve = []
+        self.guide = []               # 끝낸 안내 단계
+        self.show_guide = True        # 그림 만들 때는 끕니다 (scripts/make_media.py)
+        self.rects = {}               # 안내가 가리킬 곳 (그릴 때 기록)
+        self.uploading, self.up_result = False, None
 
     # ── 저장 · 이어하기 ───────────────────────────────────────────────────
     def save_state(self):
         self.app.career.studio = {"versions": [{k: v for k, v in x.items() if k != "human"} for x in self.versions],
                                   "labels": [[d, [round(float(o), 6) for o in obs], a] for d, obs, a in self.labels],
-                                  "values": dict(self.values), "ask": self.ask}
+                                  "values": dict(self.values), "ask": self.ask, "guide": list(self.guide)}
 
     def restore(self):
         st = self.app.career.studio or {}
@@ -63,6 +75,7 @@ class Studio:
         self.labels = [tuple(x) for x in st.get("labels", [])]
         self.values = dict(self.values, **st.get("values", {}))
         self.ask = st.get("ask", True)
+        self.guide = list(st.get("guide", []))
         self.job, self.review, self.feedback, self.curve = None, None, None, []
         if not self.versions:
             self.begin()
@@ -86,6 +99,7 @@ class Studio:
             return
         brain = a.entry(self.current["rid"])["brain"]
         self.job, self.curve = "train", []
+        self.done("train")
         a.trainer.start(a.career.config, self.values, iterations=LENGTH, months_per_iter=24, seed=len(self.versions),
                         start_spec=brain.spec, labels=list(self.labels), profile=a.career.profile)
         a.sfx("click")
@@ -143,6 +157,7 @@ class Studio:
         x = R["x"]
         acts = ct.DEPTS[x["dept"]]["actions"]
         self.labels.append((x["dept"], list(x["obs"]), i))
+        self.done("label")
         self.review = None
         # 시뮬레이터가 선택지마다 그 달을 끝까지 돌려 봅니다 (카드가 뜬 그 달 · 그 판단 기준)
         try:
@@ -174,7 +189,10 @@ class Studio:
         elif self.feedback:
             self.result(surf)
         if self.job == "v0":
-            self.splash(surf, "모델 준비 중")
+            self.splash(surf, "모델 준비 중 · 규칙 사장을 따라 배우는 중")
+        self.upload_poll()
+        if self.show_guide:
+            self.coach(surf)
 
     def hud(self, surf):
         a, ui = self.app, self.app.ui
@@ -218,6 +236,7 @@ class Studio:
         rows = [it["x"] for it in a.feed[-n:]]
         h = 20 + len(rows) * 13 + 4
         r = pygame.Rect(6, top, w, h)
+        self.rects["live"] = r
         cover(surf, r)
         bg = pygame.Surface(r.size, pygame.SRCALPHA)
         pygame.draw.rect(bg, (6, 9, 10, 238), bg.get_rect(), border_radius=8)
@@ -263,6 +282,7 @@ class Studio:
             ui.label(surf, "한 달 이익", x + w - 6, y + 6, MUTED, right=True)
         y += 60
         # 보상
+        self.rects["reward"] = pygame.Rect(x, y, w, 62)
         ui.frame(surf, (x, y, w, 62), "보상")
         yy = y + 20
         for key, ic in (("이익", "coin"), ("고객 만족", "smile"), ("위험", "shield")):
@@ -280,6 +300,7 @@ class Studio:
         self.ask = ui.seg(surf, (x + w - 70, y + 9, 64, 15), [True, False], self.ask, ["묻기", "끄기"])
         y += 38
         # 학습 버튼
+        self.rects["train"] = pygame.Rect(x, y, w, 26)
         T = a.trainer
         if T.running and self.job == "train":
             it = T.rows[-1]["iteration"] if T.rows else 0
@@ -298,12 +319,14 @@ class Studio:
         y += 30
         # 성적: 학습 중에는 학습 곡선, 아니면 버전별 막대
         h = a.vh - y - 28 - 50
+        self.rects["graph"] = pygame.Rect(x, y, w, h)
         ui.frame(surf, (x, y, w, h), "학습 곡선" if self.job == "train" else "버전별 한 달 이익")
         gx, gy, gw, gh = x + 8, y + 22, w - 16, h - 40
         if self.job == "train" and self.curve:
             pts = [(i, v) for i, v in enumerate(self.curve) if v is not None]
             if pts:
-                lo = min([v for _, v in pts] + [cur["profit"] if cur else 0]); hi = max(v for _, v in pts) + 1
+                ref = [cur["profit"]] if cur else [0]                  # 지금 버전 기준선도 그래프 안에 들어오게
+                lo = min([v for _, v in pts] + ref); hi = max([v for _, v in pts] + ref) + 1
                 P = [(gx + int(i / LENGTH * gw), gy + gh - int((v - lo) / (hi - lo + 1e-9) * gh)) for i, v in pts]
                 if cur:
                     yb = gy + gh - int((cur["profit"] - lo) / (hi - lo + 1e-9) * gh)
@@ -323,6 +346,7 @@ class Studio:
                 ui.label(surf, v["name"], bx + bw // 2, gy + gh + 2, WHITE if last else MUTED, center=True)
         # 실제 데이터 시험: 학습에 쓰지 않은 실제 기록으로 다시 채점
         ry = y + h + 4
+        self.rects["real"] = pygame.Rect(x, ry, w, 46)
         ui.frame(surf, (x, ry, w, 46), "실제 데이터 시험")
         if ui.hover((x, ry, w, 46)): ui.tip = REAL_TIP
         real = cur.get("real") if cur else None
@@ -334,9 +358,16 @@ class Studio:
             ui.label(surf, val, x + w - 6, yy, ACID if real else MUTED, bold=True, right=True)
         # 저장
         by = a.vh - 24
-        if ui.button(surf, (x, by, w // 2 - 2, 18), "brain.json", "save", kind="ghost", enabled=bool(cur)):
+        self.rects["save"] = pygame.Rect(x, by, w, 18)
+        bw = (w - 4) // 3
+        if ui.button(surf, (x, by, bw, 18), "저장", "save", kind="ghost", enabled=bool(cur) and not self.job,
+                     tip="brain.json을 다운로드 폴더에 · Colab 1단계에서 이 파일을 올리면 Qwen의 선생님이 됩니다"):
             self.save()
-        if ui.button(surf, (x + w // 2 + 2, by, w // 2 - 2, 18), "처음부터", "dice", kind="ghost"):
+        if ui.button(surf, (x + bw + 2, by, bw, 18), "…" if self.uploading else "올리기", "hf", kind="ghost",
+                     enabled=bool(cur) and not self.job and not self.uploading,
+                     tip="Hugging Face에 내 모델 공개 · connectailab-rl-아이디-버전-teacher (처음 한 번 터미널에서 hf auth login)"):
+            self.upload()
+        if ui.button(surf, (x + 2 * (bw + 2), by, w - 2 * (bw + 2), 18), "처음부터", "dice", kind="ghost", enabled=not self.job):
             self.begin()
 
     def save(self):
@@ -344,12 +375,133 @@ class Studio:
         import shutil
         a = self.app
         e = a.entry(self.current["rid"])
-        dst = os.path.join(os.path.expanduser("~"), "Downloads", f"{e['brain'].name}.json")
+        folder = os.path.join(os.path.expanduser("~"), "Downloads")       # 묻지 않고 다운로드 폴더에 (Colab 1단계에서 이 파일을 올립니다)
+        os.makedirs(folder, exist_ok=True)
+        dst, n = os.path.join(folder, f"{e['brain'].name}.json"), 2
+        while os.path.exists(dst):                                          # 덮어쓰지 않고 -2, -3 … 을 붙입니다
+            dst, n = os.path.join(folder, f"{e['brain'].name}-{n}.json"), n + 1
         if e.get("path"):
             shutil.copy(e["path"], dst)
         else:
             e["brain"].save(dst)
         a.toast(f"저장 · {dst}", "good", "save")
+        self.done("save")
+
+    def upload(self):
+        """올리기 · 지금 버전의 brain.json을 Hugging Face에 (모델 카드 · 성적 · 자기소개 about_me.md 함께)."""
+        import os
+        import tempfile
+        import threading
+        a = self.app
+        if self.uploading or not self.current:
+            return
+        e, version = a.entry(self.current["rid"]), self.current["name"]
+        self.uploading = True
+        a.toast("Hugging Face에 올리는 중 · 모델 카드에 넣을 성적을 계산합니다 (1분 안팎)", "info", "hf")
+
+        def work():
+            try:
+                from huggingface_hub import HfApi
+            except ImportError:
+                self.up_result = ("bad", '올리기 도구가 없습니다 · pip install -e ".[game]" 로 다시 설치해 주세요'); return
+            try:
+                HfApi(token=os.environ.get("HF_TOKEN")).whoami()
+            except Exception:
+                self.up_result = ("bad", "먼저 터미널에서 hf auth login 을 한 번 해 주세요 (Write 토큰)"); return
+            try:
+                from ..hub import find_about, push_brain
+                from ..llm.hub import make_author
+                path = e.get("path")
+                if not path:
+                    path = os.path.join(tempfile.mkdtemp(), "brain.json"); e["brain"].save(path)
+                self.up_result = ("good", push_brain(path, version=version, author=make_author(find_about())))
+            except Exception as ex:
+                self.up_result = ("bad", f"올리지 못했습니다 · {str(ex)[:70]}")
+        threading.Thread(target=work, daemon=True).start()
+
+    def upload_poll(self):
+        res, self.up_result = self.up_result, None
+        if not res:
+            return
+        self.uploading = False
+        a = self.app
+        if res[0] == "good":
+            a.toast("올렸습니다 · " + res[1].replace("https://", ""), "good", "hf"); a.sfx("level")
+            self.done("save")
+            try:
+                import webbrowser
+                webbrowser.open(res[1])
+            except Exception:
+                pass
+        else:
+            a.toast(res[1], "bad", "warn")
+
+    # ── 처음 켠 사람을 위한 안내 ──────────────────────────────────────────
+    def done(self, key):
+        """이 단계와 그 앞 단계를 모두 끝낸 것으로 (예: 학습을 먼저 눌렀다면 앞의 안내는 건너뜀)."""
+        ids = [g[0] for g in GUIDE]
+        upto = ids[:ids.index(key) + 1] if key in ids else [key]
+        self.guide = list(dict.fromkeys(self.guide + upto))
+        self.save_state()
+
+    def step_now(self):
+        if self.job == "v0" or not self.versions:
+            return None
+        if self.review:
+            return LABEL_TIP if "label" not in self.guide else None
+        for g in GUIDE:
+            if g[0] in self.guide:
+                continue
+            if g[0] == "curve" and self.job != "train":
+                if len(self.versions) > 1: self.done("curve"); continue      # 학습이 끝났으면 넘어갑니다
+                return None
+            if g[0] == "real" and len(self.versions) < 2:
+                return None                                                  # 학습한 모델이 생긴 뒤에
+            return g
+        return None
+
+    def coach(self, surf):
+        a, ui, f = self.app, self.app.ui, self.app.fonts
+        g = self.step_now()
+        if not g:
+            return
+        key, head, body, target = g
+        seq = [x[0] for x in GUIDE]
+        n = seq.index(key) + 1 if key in seq else None
+        # 가리킬 곳 · 형광 테두리가 숨 쉬듯
+        if target and target in self.rects:
+            t = self.rects[target].inflate(6, 6)
+            on = 0.5 + 0.5 * math.sin(a.t_real * 5)
+            glow = pygame.Surface(t.size, pygame.SRCALPHA)
+            pygame.draw.rect(glow, (208, 249, 145, int(90 + 150 * on)), glow.get_rect(), 2, border_radius=8)
+            surf.blit(glow, t.topleft)
+        wr = a.world_rect
+        W = min(340, wr.width - 12)
+        lines = []                                    # 안내 글은 띄어쓰기에서만 줄을 바꿉니다
+        for word in body.split(" "):
+            if lines and f.width(lines[-1] + " " + word) <= W - 20: lines[-1] += " " + word
+            else: lines.append(word)
+        lines = lines[:3]
+        H = 34 + len(lines) * 13 + (22 if key != "label" else 6)
+        r = pygame.Rect(6, wr.bottom - H - 6, W, H)
+        cover(surf, r)
+        bg = pygame.Surface(r.size, pygame.SRCALPHA)
+        pygame.draw.rect(bg, (6, 9, 10, 244), bg.get_rect(), border_radius=8)
+        pygame.draw.rect(bg, (208, 249, 145, 200), bg.get_rect(), 1, border_radius=8)
+        surf.blit(bg, r.topleft)
+        ui.label(surf, f"STEP {n}/{len(GUIDE)}" if n else "TIP", r.x + 10, r.y + 6, ACID, bold=True)
+        ui.label(surf, "H 다시 보기", r.right - 10, r.y + 6, MUTED, right=True)
+        ui.label(surf, head, r.x + 10, r.y + 19, WHITE, bold=True)
+        for i, line in enumerate(lines):
+            ui.label(surf, line, r.x + 10, r.y + 34 + i * 13, (200, 208, 198))
+        by = r.bottom - 20
+        if key in ("watch", "reward", "real", "save"):
+            if ui.button(surf, (r.right - 60, by, 52, 15), "다음" if key != "save" else "알겠어요", kind="acid"):
+                self.done(key); a.sfx("click")
+        elif key == "train":
+            ui.label(surf, "→ 오른쪽 형광 버튼", r.right - 10, by + 2, ACID, bold=True, right=True)
+        if key != "label" and ui.button(surf, (r.x + 8, by, 64, 15), "안내 끄기", kind="ghost"):
+            self.done(GUIDE[-1][0]); self.done("label")
 
     def card(self, surf):
         """사람 확인 카드 · 모델이 확신하지 못한 판단을 사람이 고릅니다."""
@@ -435,7 +587,7 @@ class Studio:
     def splash(self, surf, text):
         a, ui = self.app, self.app.ui
         wr = a.world_rect
-        r = pygame.Rect(wr.centerx - 80, wr.centery - 16, 160, 32)
+        r = pygame.Rect(wr.centerx - 110, wr.centery - 16, 220, 32)
         cover(surf, r)
         pygame.draw.rect(surf, (6, 9, 10), r, border_radius=8)
         pygame.draw.rect(surf, ACID, r, 1, border_radius=8)

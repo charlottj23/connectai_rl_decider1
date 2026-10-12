@@ -25,6 +25,7 @@ def main():
         if f.endswith((".png", ".gif")): os.remove(os.path.join(OUT, f))
     os.makedirs(OUT, exist_ok=True)
     app = App(headless=True, reset=True, size=(2000, 1250))
+    app.studio.show_guide = False                    # README 그림에는 처음 안내를 빼고
 
     def frames(n, dt=1 / 60):
         for _ in range(n): app.step(dt, [])

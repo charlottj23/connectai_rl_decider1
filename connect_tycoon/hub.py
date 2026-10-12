@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Hugging Face 모델 카드 · 회사 두뇌(brain.json)를 올릴 때 README.md를 만듭니다."""
 import json
+import os
 
 from . import jev as J
 from .policies import RulePolicy
@@ -78,3 +79,31 @@ AI 교육 브랜드 · Transforming Lives Through AI Education
 
 합성 회사 시뮬레이터 위의 교육용 모형입니다. 실제 경영 성과를 보장하거나 예측하지 않습니다.
 """
+
+
+def push_brain(path, repo=None, version="v1", name=None, author=None, token=None):
+    """brain.json 하나를 Hugging Face에 올립니다 · 이름은 connectailab-rl-이름-버전-teacher (이름을 안 주면 HF 아이디).
+    토큰은 `hf auth login`으로 저장된 것 또는 환경변수 HF_TOKEN (코드에 적지 않습니다)."""
+    from huggingface_hub import HfApi
+
+    import connect_tycoon as ct
+    from .llm.hub import repo_name
+    b = ct.CompanyBrain.from_file(path)
+    api = HfApi(token=token or os.environ.get("HF_TOKEN"))
+    if not repo:
+        user = api.whoami()["name"]
+        repo = f"{user}/{repo_name(name or user, version or 'v1', 'teacher')}"
+    api.create_repo(repo, exist_ok=True)
+    co = ct.make_company(config=b.spec["company"].get("config"), profile=b.spec["company"].get("profile"))   # 학습한 회사 그대로
+    api.upload_file(path_or_fileobj=path, path_in_repo="brain.json", repo_id=repo)
+    api.upload_file(path_or_fileobj=model_card(b, co, repo, author=author).encode("utf-8"), path_in_repo="README.md", repo_id=repo)
+    return f"https://huggingface.co/{repo}"
+
+
+def find_about():
+    """자기소개 글 · 지금 폴더나 다운로드 폴더의 about_me.md (없으면 빈 글)."""
+    for d in (os.getcwd(), os.path.join(os.path.expanduser("~"), "Downloads")):
+        f = os.path.join(d, "about_me.md")
+        if os.path.exists(f):
+            return open(f, encoding="utf-8").read()
+    return ""
