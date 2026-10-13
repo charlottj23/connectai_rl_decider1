@@ -170,7 +170,7 @@ class Fonts:
 
     @property
     def hires(self):
-        return self.scale >= 2 and self.has_hi
+        return self.scale >= 1 and self.has_hi
 
     def _font(self, bold, mono, k):
         px = int(round(TEXT_PX * k * self.scale))
